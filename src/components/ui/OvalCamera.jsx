@@ -9,14 +9,11 @@ const BRIGHTNESS_DARK = 28
 const BRIGHTNESS_DIM = 50
 const BRIGHTNESS_SAMPLE_EVERY = 20
 
-// Desafios de liveness por movimento de cabeça
 const CHALLENGE_TYPES = ['turn', 'nod']
 const CHALLENGE_MSG = {
   turn: 'Vire a cabeça lentamente para um lado',
   nod: 'Acene com a cabeça para baixo',
 }
-// turn: detecta yaw absoluto > limiar
-// nod: detecta deslocamento Y do centro da face > limiar (face desce no frame)
 const YAW_THRESHOLD = 0.11
 const NOD_RATIO = 0.16
 
@@ -95,13 +92,16 @@ export function OvalCamera({ onCapture }) {
   const alignedSinceRef = useRef(null)
 
   // Challenge refs
-  const phaseRef = useRef('positioning')  // 'positioning' | 'challenge' | 'done'
-  const challengeRef = useRef(null)       // { type: 'turn' | 'nod' }
+  const phaseRef = useRef('positioning')
+  const challengeRef = useRef(null)
   const motionDetectedRef = useRef(false)
-  const baseFaceCenterYRef = useRef(null) // baseline para detecção de nod
+  const baseFaceCenterYRef = useRef(null)
   const overlayColorRef = useRef('#6b7280')
   const overlayMsgRef = useRef('')
   const frameCountRef = useRef(0)
+
+  // Guarda o shot capturado quando o rosto ficou alinhado
+  const alignedSelfieRef = useRef(null)
 
   const [status, setStatus] = useState('loading_models')
   const [modelsReady, setModelsReady] = useState(false)
@@ -135,13 +135,23 @@ export function OvalCamera({ onCapture }) {
     return () => { if (stream) stream.getTracks().forEach(t => t.stop()) }
   }, [])
 
-  const capturePhoto = useCallback(() => {
+  // Captura o frame atual como base64 (lê sempre o ref mais recente)
+  function snapFrame() {
     const video = videoRef.current
-    if (!video) return
+    if (!video) return null
     const cap = document.createElement('canvas')
-    cap.width = video.videoWidth; cap.height = video.videoHeight
+    cap.width = video.videoWidth
+    cap.height = video.videoHeight
     cap.getContext('2d').drawImage(video, 0, 0)
-    onCapture(cap.toDataURL('image/jpeg', 0.85))
+    return cap.toDataURL('image/jpeg', 0.85)
+  }
+
+  // Chamado ao concluir o desafio — entrega ambos os shots ao pai
+  const capturePhoto = useCallback(() => {
+    onCapture({
+      selfieBase64: snapFrame(),
+      selfieAlignedBase64: alignedSelfieRef.current,
+    })
   }, [onCapture])
 
   useEffect(() => {
@@ -189,6 +199,9 @@ export function OvalCamera({ onCapture }) {
             if (fs === 'aligned') {
               if (!alignedSinceRef.current) alignedSinceRef.current = Date.now()
               if (Date.now() - alignedSinceRef.current >= ALIGNED_HOLD_MS) {
+                // Shot 1: rosto bem posicionado, antes do desafio
+                alignedSelfieRef.current = snapFrame()
+
                 const type = CHALLENGE_TYPES[Math.floor(Math.random() * CHALLENGE_TYPES.length)]
                 const ch = { type }
                 challengeRef.current = ch
@@ -226,15 +239,12 @@ export function OvalCamera({ onCapture }) {
             const centerY = box.y + box.height / 2
 
             let detected = false
-
-            if (ch.type === 'turn') {
-              detected = Math.abs(yaw) > YAW_THRESHOLD
-            } else if (ch.type === 'nod') {
+            if (ch.type === 'turn') detected = Math.abs(yaw) > YAW_THRESHOLD
+            else if (ch.type === 'nod') {
               if (baseFaceCenterYRef.current === null) {
                 baseFaceCenterYRef.current = centerY
               } else {
-                const deltaRatio = (centerY - baseFaceCenterYRef.current) / box.height
-                detected = deltaRatio > NOD_RATIO
+                detected = (centerY - baseFaceCenterYRef.current) / box.height > NOD_RATIO
               }
             }
 
@@ -244,6 +254,7 @@ export function OvalCamera({ onCapture }) {
               overlayMsgRef.current = msg
               setBottomMsg(msg)
               setPhase('done')
+              // Shot 2: após o desafio de movimento
               setTimeout(() => capturePhoto(), 600)
               return
             }

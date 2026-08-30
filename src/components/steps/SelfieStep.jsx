@@ -7,8 +7,8 @@ import { Button } from '@/components/ui/button'
 export function SelfieStep({ onNext, onBack }) {
   const [cameraOpen, setCameraOpen] = useState(false)
 
-  function handleCapture(selfieBase64) {
-    onNext({ selfieBase64, selfieTimestamp: new Date().toISOString() })
+  function handleCapture({ selfieBase64, selfieAlignedBase64 }) {
+    onNext({ selfieBase64, selfieAlignedBase64, selfieTimestamp: new Date().toISOString() })
   }
 
   if (!cameraOpen) {

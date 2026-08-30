@@ -43,7 +43,7 @@ function downloadJson(data) {
 }
 
 export function ReceiptStep({ data }) {
-  const { selfieBase64, ...rest } = data
+  const { selfieBase64, selfieAlignedBase64, ...rest } = data
 
   return (
     <>
@@ -144,7 +144,13 @@ export function ReceiptStep({ data }) {
         <Button
           className="w-full bg-success hover:bg-success/90 text-success-foreground"
           size="lg"
-          onClick={() => downloadJson({ ...data, selfieBase64: selfieBase64 ? '[base64 presente no arquivo JSON]' : null, selfieBase64Full: selfieBase64 })}
+          onClick={() => downloadJson({
+            ...rest,
+            selfieBase64: selfieBase64 ? '[base64 — ver selfieBase64Full]' : null,
+            selfieBase64Full: selfieBase64,
+            selfieAlignedBase64: selfieAlignedBase64 ? '[base64 — ver selfieAlignedBase64Full]' : null,
+            selfieAlignedBase64Full: selfieAlignedBase64,
+          })}
         >
           <IconDownload size={16} />
           Baixar comprovante JSON
