@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { OvalCamera } from '@/components/ui/OvalCamera'
 import { Button } from '@/components/ui/button'
-import { Camera, Lightbulb, Shield, Cpu, ArrowRight } from 'lucide-react'
+import { Camera, Lightbulb, Shield, ScanFace, ArrowRight } from 'lucide-react'
 
 export function SelfieStep({ onNext }) {
   const [cameraOpen, setCameraOpen] = useState(false)
@@ -24,10 +24,9 @@ export function SelfieStep({ onNext }) {
 
           <div className="space-y-2.5 mb-5">
             {[
-              { icon: Cpu, text: 'Posicione seu rosto dentro da moldura oval' },
+              { icon: ScanFace, text: 'Posicione seu rosto dentro da moldura oval' },
               { icon: Lightbulb, text: 'Mantenha uma boa iluminação no rosto' },
               { icon: Camera, text: 'A captura é automática quando o rosto estiver centralizado' },
-              { icon: Shield, text: 'Todo o processamento ocorre localmente no seu dispositivo' },
             ].map(({ icon: Icon, text }, i) => (
               <div key={i} className="flex items-start gap-3 text-sm text-muted-foreground">
                 <div className="flex items-center justify-center w-7 h-7 rounded-full bg-primary/10 flex-shrink-0 mt-0.5">

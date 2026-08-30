@@ -16,34 +16,36 @@ export function StepIndicator({ currentStep }) {
     <div className="px-6 py-4 border-b border-border bg-card">
       <div className="flex items-center">
         {STEP_CONFIG.map((step, idx) => (
-          <div key={step.key} className="flex items-center flex-1 last:flex-none">
-            <div className="flex flex-col items-center gap-1.5 relative">
+          <div key={step.key} className={cn('flex items-center', idx < STEP_CONFIG.length - 1 ? 'flex-1' : 'flex-none')}>
+            {/* Dot + label */}
+            <div className="flex flex-col items-center gap-1.5">
               <div
                 className={cn(
-                  'flex items-center justify-center w-8 h-8 rounded-full text-[13px] font-semibold transition-all duration-200 relative z-10',
+                  'flex items-center justify-center w-8 h-8 rounded-full transition-all duration-200',
                   idx < currentIdx && 'bg-success text-success-foreground',
                   idx === currentIdx && 'bg-primary text-primary-foreground ring-4 ring-primary/15',
                   idx > currentIdx && 'bg-muted text-muted-foreground'
                 )}
               >
-                {idx < currentIdx ? <Check size={14} strokeWidth={2.5} /> : <step.Icon size={14} strokeWidth={idx === currentIdx ? 2.5 : 2} />}
+                {idx < currentIdx
+                  ? <Check size={14} strokeWidth={2.5} />
+                  : <step.Icon size={14} strokeWidth={idx === currentIdx ? 2.5 : 2} />
+                }
               </div>
-              <span
-                className={cn(
-                  'text-[9px] whitespace-nowrap font-medium',
-                  idx === currentIdx ? 'text-primary font-semibold' : 'text-muted-foreground'
-                )}
-              >
+              <span className={cn(
+                'text-[9px] whitespace-nowrap font-medium leading-none',
+                idx === currentIdx ? 'text-primary font-semibold' : 'text-muted-foreground'
+              )}>
                 {step.label}
               </span>
             </div>
+
+            {/* Connector */}
             {idx < STEP_CONFIG.length - 1 && (
-              <div
-                className={cn(
-                  'flex-1 h-[2px] mb-4 mx-1 transition-colors duration-300',
-                  idx < currentIdx ? 'bg-success' : 'bg-border'
-                )}
-              />
+              <div className={cn(
+                'flex-1 h-[2px] mx-1 mb-4 transition-colors duration-300',
+                idx < currentIdx ? 'bg-success' : 'bg-border'
+              )} />
             )}
           </div>
         ))}
