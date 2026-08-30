@@ -51,11 +51,29 @@ async function getIpData() {
   }
 }
 
+async function getVpnData() {
+  try {
+    const res = await fetch('https://ipapi.is/json/', { signal: AbortSignal.timeout(5000) })
+    const data = await res.json()
+    const flagged = !!(data.is_vpn || data.is_tor || data.is_proxy || data.is_datacenter)
+    return {
+      networkIsVpn: !!(data.is_vpn),
+      networkIsTor: !!(data.is_tor),
+      networkIsProxy: !!(data.is_proxy),
+      networkIsDatacenter: !!(data.is_datacenter),
+      networkRiskFlag: flagged,
+    }
+  } catch {
+    return { networkIsVpn: null, networkIsTor: null, networkIsProxy: null, networkRiskFlag: null }
+  }
+}
+
 export async function collectBrowserData(documentText) {
-  const [documentHash, battery, ipData] = await Promise.all([
+  const [documentHash, battery, ipData, vpnData] = await Promise.all([
     sha256(documentText),
     getBatteryInfo(),
     getIpData(),
+    getVpnData(),
   ])
 
   const nav = navigator
@@ -94,5 +112,6 @@ export async function collectBrowserData(documentText) {
     battery,
 
     ...ipData,
+    ...vpnData,
   }
 }

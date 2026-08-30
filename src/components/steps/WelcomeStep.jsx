@@ -1,7 +1,6 @@
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Button } from '@/components/ui/button'
-import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Shield, ArrowRight, FileText } from 'lucide-react'
+import { Info, ArrowRight, FileText } from 'lucide-react'
 
 const DOCUMENT_TEXT = `CONTRATO DE PRESTAÇÃO DE SERVIÇOS DIGITAIS
 
@@ -56,12 +55,10 @@ export function WelcomeStep({ onNext }) {
           </ScrollArea>
         </div>
 
-        <Alert className="border-warning/30 bg-warning/10">
-          <Shield size={14} className="text-warning-foreground" />
-          <AlertDescription className="text-warning-foreground text-[13px]">
-            <span className="font-semibold">Assinatura com validade jurídica.</span> Serão coletados dados do dispositivo, localização e selfie para garantir a autenticidade desta assinatura.
-          </AlertDescription>
-        </Alert>
+        <div className="flex items-center gap-2 rounded-md border border-border bg-muted/40 px-3 py-2 text-[12px] text-muted-foreground">
+          <Info size={12} className="flex-shrink-0 text-foreground/50" />
+          <span><span className="font-medium text-foreground/70">Validade jurídica:</span> serão coletados IP, localização e selfie.</span>
+        </div>
       </div>
 
       <div className="px-6 py-4 border-t border-border">

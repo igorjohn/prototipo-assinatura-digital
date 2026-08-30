@@ -1,31 +1,28 @@
-import { FileText, User, MapPin, Camera, CheckCircle, Check } from 'lucide-react'
+import { FileText, User, Mail, MapPin, Camera, CheckCircle, Check } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 const STEP_CONFIG = [
-  { key: 'welcome', label: 'Documento', Icon: FileText },
-  { key: 'userData', label: 'Dados', Icon: User },
-  { key: 'geo', label: 'Localização', Icon: MapPin },
-  { key: 'selfie', label: 'Selfie', Icon: Camera },
-  { key: 'receipt', label: 'Conclusão', Icon: CheckCircle },
+  { key: 'welcome',  Icon: FileText },
+  { key: 'userData', Icon: User },
+  { key: 'otp',      Icon: Mail },
+  { key: 'geo',      Icon: MapPin },
+  { key: 'selfie',   Icon: Camera },
+  { key: 'receipt',  Icon: CheckCircle },
 ]
 
-const N = STEP_CONFIG.length          // 5
-const HALF_CELL = `${50 / N}%`        // 10% — metade da primeira/última célula
+const N = STEP_CONFIG.length
+const HALF_CELL = `${50 / N}%`
 
 export function StepIndicator({ currentStep }) {
   const currentIdx = STEP_CONFIG.findIndex(s => s.key === currentStep)
 
   return (
-    <div className="px-4 py-4 border-b border-border bg-card">
+    <div className="px-4 py-3 border-b border-border bg-card">
       <div className="relative flex">
-
-        {/* Linha de fundo: do centro do 1º dot ao centro do último */}
         <div
           className="absolute top-4 h-[2px] bg-border"
           style={{ left: HALF_CELL, right: HALF_CELL }}
         />
-
-        {/* Linha de progresso */}
         {currentIdx > 0 && (
           <div
             className="absolute top-4 h-[2px] bg-success transition-all duration-500"
@@ -35,12 +32,10 @@ export function StepIndicator({ currentStep }) {
             }}
           />
         )}
-
-        {/* Cada step ocupa 1/N da largura total */}
         {STEP_CONFIG.map((step, idx) => (
           <div
             key={step.key}
-            className="relative z-10 flex flex-col items-center gap-1.5"
+            className="relative z-10 flex flex-col items-center"
             style={{ width: `${100 / N}%` }}
           >
             <div
@@ -56,15 +51,6 @@ export function StepIndicator({ currentStep }) {
                 : <step.Icon size={14} strokeWidth={idx === currentIdx ? 2.5 : 2} />
               }
             </div>
-            <span
-              className={cn(
-                'text-[9px] text-center leading-none font-medium',
-                idx === currentIdx ? 'text-primary font-semibold' : 'text-muted-foreground'
-              )}
-              style={{ maxWidth: '100%', wordBreak: 'break-word' }}
-            >
-              {step.label}
-            </span>
           </div>
         ))}
       </div>
