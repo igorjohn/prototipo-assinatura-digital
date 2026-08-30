@@ -2,7 +2,6 @@ import { useState } from 'react'
 import { OvalCamera } from '@/components/ui/OvalCamera'
 import { Button } from '@/components/ui/button'
 import { IconCamera, IconBulb, IconShield, IconFaceId, IconArrowRight, IconArrowLeft } from '@tabler/icons-react'
-import { Button } from '@/components/ui/button'
 
 export function SelfieStep({ onNext, onBack }) {
   const [cameraOpen, setCameraOpen] = useState(false)
