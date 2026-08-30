@@ -1,9 +1,10 @@
 import { useState } from 'react'
 import { OvalCamera } from '@/components/ui/OvalCamera'
 import { Button } from '@/components/ui/button'
-import { IconCamera, IconBulb, IconShield, IconFaceId, IconArrowRight } from '@tabler/icons-react'
+import { IconCamera, IconBulb, IconShield, IconFaceId, IconArrowRight, IconArrowLeft } from '@tabler/icons-react'
+import { Button } from '@/components/ui/button'
 
-export function SelfieStep({ onNext }) {
+export function SelfieStep({ onNext, onBack }) {
   const [cameraOpen, setCameraOpen] = useState(false)
 
   function handleCapture(selfieBase64) {
@@ -14,6 +15,12 @@ export function SelfieStep({ onNext }) {
     return (
       <>
         <div className="p-6">
+          {onBack && (
+            <Button variant="ghost" size="sm" onClick={onBack} className="-ml-2 mb-3 h-7 text-xs text-muted-foreground hover:text-foreground gap-1">
+              <IconArrowLeft size={14} />
+              Voltar
+            </Button>
+          )}
           <div className="flex items-center gap-2 mb-1">
             <IconCamera size={16} className="text-primary" />
             <h2 className="text-lg font-bold text-foreground">Verificação por selfie</h2>

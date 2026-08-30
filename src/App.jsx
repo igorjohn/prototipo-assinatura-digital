@@ -27,6 +27,11 @@ export default function App() {
     if (idx < STEPS.length - 1) setStep(STEPS[idx + 1])
   }
 
+  function goBack() {
+    const idx = STEPS.indexOf(step)
+    if (idx > 0) setStep(STEPS[idx - 1])
+  }
+
   return (
     <div className="min-h-screen bg-zinc-100 flex flex-col items-center py-4 px-4 sm:py-10">
       <div className="w-full max-w-[480px]">
@@ -43,10 +48,10 @@ export default function App() {
         <div className="bg-card rounded-xl shadow-sm border border-border overflow-hidden">
           <StepIndicator currentStep={step} />
           {step === 'welcome'  && <WelcomeStep onNext={advance} />}
-          {step === 'userData' && <UserDataStep onNext={advance} />}
-          {step === 'otp'      && <OtpStep onNext={advance} signerData={collectedData} />}
-          {step === 'geo'      && <GeoStep onNext={advance} signerData={collectedData} />}
-          {step === 'selfie'   && <SelfieStep onNext={advance} />}
+          {step === 'userData' && <UserDataStep onNext={advance} onBack={goBack} initialData={collectedData} />}
+          {step === 'otp'      && <OtpStep onNext={advance} onBack={goBack} signerData={collectedData} />}
+          {step === 'geo'      && <GeoStep onNext={advance} onBack={goBack} />}
+          {step === 'selfie'   && <SelfieStep onNext={advance} onBack={goBack} />}
           {step === 'receipt'  && <ReceiptStep data={collectedData} />}
         </div>
 

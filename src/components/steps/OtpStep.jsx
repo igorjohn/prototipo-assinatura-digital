@@ -2,9 +2,10 @@ import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp'
 import { REGEXP_ONLY_DIGITS } from 'input-otp'
-import { IconMail, IconArrowRight, IconRefresh } from '@tabler/icons-react'
+import { IconMail, IconArrowRight, IconRefresh, IconArrowLeft } from '@tabler/icons-react'
+import { Button } from '@/components/ui/button'
 
-export function OtpStep({ onNext, signerData }) {
+export function OtpStep({ onNext, onBack, signerData }) {
   const [value, setValue] = useState('')
   const [error, setError] = useState(null)
   const [resent, setResent] = useState(false)
@@ -33,6 +34,12 @@ export function OtpStep({ onNext, signerData }) {
   return (
     <>
       <div className="p-6">
+        {onBack && (
+          <Button variant="ghost" size="sm" onClick={onBack} className="-ml-2 mb-3 h-7 text-xs text-muted-foreground hover:text-foreground gap-1">
+            <IconArrowLeft size={14} />
+            Voltar
+          </Button>
+        )}
         <div className="flex items-center gap-2 mb-1">
           <IconMail size={16} className="text-primary" />
           <h2 className="text-lg font-bold text-foreground">Verificação de e-mail</h2>
