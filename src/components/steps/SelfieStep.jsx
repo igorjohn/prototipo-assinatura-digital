@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { OvalCamera } from '@/components/ui/OvalCamera'
 import { Button } from '@/components/ui/button'
 import { IconCamera, IconBulb, IconShield, IconFaceId, IconArrowRight, IconArrowLeft } from '@tabler/icons-react'
+import selfieIllustration from '@/assets/selfie.svg'
 
 export function SelfieStep({ onNext, onBack }) {
   const [cameraOpen, setCameraOpen] = useState(false)
@@ -20,10 +21,11 @@ export function SelfieStep({ onNext, onBack }) {
               Voltar
             </Button>
           )}
-          <div className="flex items-center gap-2 mb-1">
-            <IconCamera size={16} className="text-primary" />
-            <h2 className="text-lg font-bold text-foreground">Verificação por selfie</h2>
+          <div className="flex justify-center mb-4">
+            <img src={selfieIllustration} alt="" aria-hidden="true" className="h-[160px] w-auto" />
           </div>
+
+          <h2 className="text-lg font-bold text-foreground mb-1">Hora da selfie, pronto?</h2>
           <p className="text-sm text-muted-foreground mb-5">
             Vamos tirar uma selfie para confirmar sua identidade. Você precisará autorizar o acesso à câmera.
           </p>
