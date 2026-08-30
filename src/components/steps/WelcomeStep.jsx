@@ -156,7 +156,7 @@ export function WelcomeStep({ onNext }) {
           onClick={onNext}
           disabled={!agreed}
         >
-          Li e quero assinar
+          Avançar com a assinatura
           <IconArrowRight size={16} />
         </Button>
       </div>
