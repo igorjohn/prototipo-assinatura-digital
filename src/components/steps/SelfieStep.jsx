@@ -1,5 +1,7 @@
 import { useState } from 'react'
-import { OvalCamera } from '../ui/OvalCamera'
+import { OvalCamera } from '@/components/ui/OvalCamera'
+import { Button } from '@/components/ui/button'
+import { Camera, Lightbulb, Shield, Cpu, ArrowRight } from 'lucide-react'
 
 export function SelfieStep({ onNext }) {
   const [cameraOpen, setCameraOpen] = useState(false)
@@ -11,34 +13,42 @@ export function SelfieStep({ onNext }) {
   if (!cameraOpen) {
     return (
       <>
-        <div className="card-body">
-          <p className="step-title">Verificação por selfie</p>
-          <p className="step-desc">
+        <div className="p-6">
+          <div className="flex items-center gap-2 mb-1">
+            <Camera size={16} className="text-primary" />
+            <h2 className="text-lg font-bold text-foreground">Verificação por selfie</h2>
+          </div>
+          <p className="text-sm text-muted-foreground mb-5">
             Vamos tirar uma selfie para confirmar sua identidade. Você precisará autorizar o acesso à câmera.
           </p>
 
-          <div className="alert alert-info" style={{ marginBottom: 16 }}>
-            <span>📷</span>
-            <div>
-              <strong>Como funciona:</strong>
-              <ul style={{ marginTop: 6, paddingLeft: 18, fontSize: 13, lineHeight: 1.8 }}>
-                <li>Posicione seu rosto dentro da moldura oval</li>
-                <li>Mantenha uma boa iluminação no rosto</li>
-                <li>A captura é automática quando o rosto estiver centralizado</li>
-                <li>Todo o processamento ocorre localmente no seu dispositivo</li>
-              </ul>
-            </div>
+          <div className="space-y-2.5 mb-5">
+            {[
+              { icon: Cpu, text: 'Posicione seu rosto dentro da moldura oval' },
+              { icon: Lightbulb, text: 'Mantenha uma boa iluminação no rosto' },
+              { icon: Camera, text: 'A captura é automática quando o rosto estiver centralizado' },
+              { icon: Shield, text: 'Todo o processamento ocorre localmente no seu dispositivo' },
+            ].map(({ icon: Icon, text }, i) => (
+              <div key={i} className="flex items-start gap-3 text-sm text-muted-foreground">
+                <div className="flex items-center justify-center w-7 h-7 rounded-full bg-primary/10 flex-shrink-0 mt-0.5">
+                  <Icon size={13} className="text-primary" />
+                </div>
+                <span className="pt-1">{text}</span>
+              </div>
+            ))}
           </div>
 
-          <div className="alert alert-warning">
-            <span>🔒</span>
+          <div className="flex items-start gap-2 rounded-lg border border-border bg-muted/30 p-3 text-[13px] text-muted-foreground">
+            <Shield size={14} className="flex-shrink-0 mt-0.5 text-primary" />
             <span>Ao continuar, o navegador solicitará permissão para usar a câmera frontal.</span>
           </div>
         </div>
-        <div className="card-footer">
-          <button className="btn btn-primary" onClick={() => setCameraOpen(true)}>
-            📷 Abrir câmera
-          </button>
+
+        <div className="px-6 py-4 border-t border-border">
+          <Button className="w-full" size="lg" onClick={() => setCameraOpen(true)}>
+            <Camera size={16} />
+            Abrir câmera
+          </Button>
         </div>
       </>
     )
@@ -46,9 +56,12 @@ export function SelfieStep({ onNext }) {
 
   return (
     <>
-      <div className="card-body">
-        <p className="step-title">Posicione seu rosto</p>
-        <p className="step-desc">
+      <div className="p-6">
+        <div className="flex items-center gap-2 mb-1">
+          <Camera size={16} className="text-primary" />
+          <h2 className="text-lg font-bold text-foreground">Posicione seu rosto</h2>
+        </div>
+        <p className="text-sm text-muted-foreground mb-4">
           Centralize seu rosto dentro da moldura oval. A captura acontece automaticamente.
         </p>
         <OvalCamera onCapture={handleCapture} />

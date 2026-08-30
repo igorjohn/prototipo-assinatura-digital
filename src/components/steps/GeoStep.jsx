@@ -1,54 +1,72 @@
 import { useEffect, useState } from 'react'
-import { collectBrowserData } from '../../lib/dataCollection'
-import { collectFingerprint } from '../../lib/fingerprint'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
+import { Separator } from '@/components/ui/separator'
+import { Globe, MapPin, Smartphone, Check, Loader2, ArrowRight, AlertTriangle } from 'lucide-react'
+import { collectBrowserData } from '@/lib/dataCollection'
+import { collectFingerprint } from '@/lib/fingerprint'
 import { CONTRACT_TEXT } from './WelcomeStep'
 
 async function requestMotionPermission() {
   if (typeof DeviceMotionEvent === 'undefined') return 'unavailable'
   if (typeof DeviceMotionEvent.requestPermission === 'function') {
-    try {
-      const result = await DeviceMotionEvent.requestPermission()
-      return result
-    } catch {
-      return 'error'
-    }
+    try { return await DeviceMotionEvent.requestPermission() } catch { return 'error' }
   }
   return 'granted'
 }
 
 function collectMotionSample(durationMs = 2000) {
   return new Promise(resolve => {
-    if (typeof DeviceMotionEvent === 'undefined') {
-      resolve([])
-      return
-    }
+    if (typeof DeviceMotionEvent === 'undefined') { resolve([]); return }
     const samples = []
-    const handler = (e) => {
-      samples.push({
-        ax: e.accelerationIncludingGravity?.x,
-        ay: e.accelerationIncludingGravity?.y,
-        az: e.accelerationIncludingGravity?.z,
-        rotAlpha: e.rotationRate?.alpha,
-        rotBeta: e.rotationRate?.beta,
-        rotGamma: e.rotationRate?.gamma,
-        ts: e.timeStamp,
-      })
-    }
+    const handler = (e) => samples.push({
+      ax: e.accelerationIncludingGravity?.x, ay: e.accelerationIncludingGravity?.y, az: e.accelerationIncludingGravity?.z,
+      rotAlpha: e.rotationRate?.alpha, rotBeta: e.rotationRate?.beta, rotGamma: e.rotationRate?.gamma, ts: e.timeStamp,
+    })
     window.addEventListener('devicemotion', handler)
-    setTimeout(() => {
-      window.removeEventListener('devicemotion', handler)
-      resolve(samples.slice(0, 60))
-    }, durationMs)
+    setTimeout(() => { window.removeEventListener('devicemotion', handler); resolve(samples.slice(0, 60)) }, durationMs)
   })
+}
+
+function PermissionCard({ icon: Icon, label, status, value, onRequest, loading, disabled }) {
+  return (
+    <div className="flex items-start gap-3 rounded-lg border border-border bg-muted/30 p-4">
+      <div className="flex items-center justify-center w-9 h-9 rounded-full bg-background border border-border flex-shrink-0 mt-0.5">
+        <Icon size={16} className="text-muted-foreground" />
+      </div>
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-2 mb-1">
+          <p className="text-[13px] font-semibold text-foreground">{label}</p>
+          {status === 'success' && <Badge variant="outline" className="text-success border-success/40 text-[10px] py-0 px-1.5">Concedida</Badge>}
+          {(status === 'denied' || status === 'unavailable') && <Badge variant="outline" className="text-destructive border-destructive/40 text-[10px] py-0 px-1.5">Negada</Badge>}
+        </div>
+        {value && <p className="text-xs text-muted-foreground">{value}</p>}
+        {status === 'idle' && !loading && !disabled && (
+          <Button size="sm" variant="outline" className="mt-2 h-7 text-xs" onClick={onRequest}>
+            Solicitar permissão
+          </Button>
+        )}
+        {status === 'requesting' && (
+          <div className="flex items-center gap-1.5 mt-1">
+            <Loader2 size={12} className="animate-spin text-muted-foreground" />
+            <span className="text-xs text-muted-foreground">Aguardando...</span>
+          </div>
+        )}
+      </div>
+      {status === 'success' && (
+        <div className="flex items-center justify-center w-6 h-6 rounded-full bg-success/10 flex-shrink-0">
+          <Check size={12} className="text-success" strokeWidth={2.5} />
+        </div>
+      )}
+    </div>
+  )
 }
 
 export function GeoStep({ onNext }) {
   const [browserData, setBrowserData] = useState(null)
   const [loading, setLoading] = useState(true)
-
   const [geoStatus, setGeoStatus] = useState('idle')
   const [geoData, setGeoData] = useState(null)
-
   const [motionStatus, setMotionStatus] = useState('idle')
   const [motionData, setMotionData] = useState(null)
 
@@ -56,10 +74,7 @@ export function GeoStep({ onNext }) {
 
   useEffect(() => {
     async function fetchData() {
-      const [bData, fpData] = await Promise.all([
-        collectBrowserData(CONTRACT_TEXT),
-        collectFingerprint(),
-      ])
+      const [bData, fpData] = await Promise.all([collectBrowserData(CONTRACT_TEXT), collectFingerprint()])
       setBrowserData({ ...bData, ...fpData })
       setLoading(false)
     }
@@ -70,25 +85,14 @@ export function GeoStep({ onNext }) {
     setGeoStatus('requesting')
     if (!navigator.geolocation) {
       setGeoData({ geoDenied: true, geoDenyReason: 'API não disponível' })
-      setGeoStatus('unavailable')
-      return
+      setGeoStatus('unavailable'); return
     }
     navigator.geolocation.getCurrentPosition(
       pos => {
-        setGeoData({
-          gpsLatitude: pos.coords.latitude,
-          gpsLongitude: pos.coords.longitude,
-          gpsAccuracy: Math.round(pos.coords.accuracy),
-          gpsAltitude: pos.coords.altitude,
-          gpsTimestamp: new Date(pos.timestamp).toISOString(),
-          geoDenied: false,
-        })
+        setGeoData({ gpsLatitude: pos.coords.latitude, gpsLongitude: pos.coords.longitude, gpsAccuracy: Math.round(pos.coords.accuracy), gpsAltitude: pos.coords.altitude, gpsTimestamp: new Date(pos.timestamp).toISOString(), geoDenied: false })
         setGeoStatus('success')
       },
-      err => {
-        setGeoData({ geoDenied: true, geoDenyReason: err.message })
-        setGeoStatus('denied')
-      },
+      err => { setGeoData({ geoDenied: true, geoDenyReason: err.message }); setGeoStatus('denied') },
       { enableHighAccuracy: true, timeout: 12000, maximumAge: 0 }
     )
   }
@@ -110,122 +114,97 @@ export function GeoStep({ onNext }) {
   const motionHandled = !isIOS || (motionStatus !== 'idle' && motionStatus !== 'requesting')
   const canContinue = !loading && geoHandled && motionHandled
 
-  function handleContinue() {
-    onNext({ ...browserData, ...geoData, ...motionData })
-  }
-
   return (
     <>
-      <div className="card-body">
-        <p className="step-title">Permissões necessárias</p>
-        <p className="step-desc">
+      <div className="p-6">
+        <div className="flex items-center gap-2 mb-1">
+          <MapPin size={16} className="text-primary" />
+          <h2 className="text-lg font-bold text-foreground">Permissões necessárias</h2>
+        </div>
+        <p className="text-sm text-muted-foreground mb-5">
           Para garantir a validade jurídica da assinatura, precisamos de acesso à sua localização e aos sensores do dispositivo.
         </p>
 
-        {loading && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
-            <div className="spinner spinner-dark" />
-            <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>Coletando dados do dispositivo...</span>
-          </div>
-        )}
-
-        {!loading && browserData?.ip && (
-          <div className="geo-card" style={{ marginBottom: 12 }}>
-            <span className="geo-icon">🌐</span>
-            <div>
-              <p className="geo-label">IP detectado</p>
-              <p className="geo-value">{browserData.ip}</p>
-              {browserData.city && (
-                <p style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
-                  {browserData.city}, {browserData.region} — {browserData.country}
-                </p>
-              )}
+        <div className="space-y-3">
+          {/* IP card */}
+          {loading ? (
+            <div className="flex items-center gap-2 text-sm text-muted-foreground py-2">
+              <Loader2 size={14} className="animate-spin" />
+              Coletando dados do dispositivo...
             </div>
-          </div>
-        )}
-
-        {/* Geo permission */}
-        <div className="geo-card" style={{ marginBottom: 12, flexDirection: 'column', alignItems: 'stretch', gap: 10 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <span className="geo-icon">📍</span>
-            <div style={{ flex: 1 }}>
-              <p className="geo-label">Localização GPS</p>
-              {geoStatus === 'success' && geoData ? (
-                <p className="geo-value" style={{ color: 'var(--success)' }}>
-                  {geoData.gpsLatitude?.toFixed(5)}, {geoData.gpsLongitude?.toFixed(5)} (±{geoData.gpsAccuracy}m)
-                </p>
-              ) : geoStatus === 'denied' || geoStatus === 'unavailable' ? (
-                <p style={{ fontSize: 13, color: 'var(--warning)' }}>Permissão negada — registrado como negado</p>
-              ) : (
-                <p style={{ fontSize: 13, color: 'var(--text-secondary)' }}>Necessária para registrar onde o documento foi assinado</p>
-              )}
+          ) : browserData?.ip && (
+            <div className="flex items-start gap-3 rounded-lg border border-border bg-muted/30 p-4">
+              <div className="flex items-center justify-center w-9 h-9 rounded-full bg-background border border-border flex-shrink-0 mt-0.5">
+                <Globe size={16} className="text-muted-foreground" />
+              </div>
+              <div>
+                <p className="text-[13px] font-semibold text-foreground mb-0.5">IP detectado</p>
+                <p className="text-xs font-mono text-muted-foreground">{browserData.ip}</p>
+                {browserData.city && (
+                  <p className="text-xs text-muted-foreground mt-0.5">{browserData.city}, {browserData.region} — {browserData.country}</p>
+                )}
+              </div>
+              <div className="flex items-center justify-center w-6 h-6 rounded-full bg-success/10 flex-shrink-0">
+                <Check size={12} className="text-success" strokeWidth={2.5} />
+              </div>
             </div>
-            {geoStatus === 'success' && <span style={{ color: 'var(--success)', fontSize: 18 }}>✓</span>}
-          </div>
-          {geoStatus === 'idle' && !loading && (
-            <button className="btn btn-primary" style={{ padding: '8px 16px', fontSize: 13 }} onClick={handleRequestGeo}>
-              Solicitar localização
-            </button>
           )}
-          {geoStatus === 'requesting' && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: 'var(--text-secondary)' }}>
-              <div className="spinner spinner-dark" style={{ width: 14, height: 14 }} />
-              Aguardando permissão...
+
+          <PermissionCard
+            icon={MapPin}
+            label="Localização GPS"
+            status={geoStatus}
+            value={
+              geoStatus === 'success' && geoData
+                ? `${geoData.gpsLatitude?.toFixed(5)}, ${geoData.gpsLongitude?.toFixed(5)} (±${geoData.gpsAccuracy}m)`
+                : geoStatus === 'denied' || geoStatus === 'unavailable'
+                ? 'Permissão negada — registrado como negado'
+                : 'Necessária para registrar onde o documento foi assinado'
+            }
+            onRequest={handleRequestGeo}
+            loading={loading}
+          />
+
+          {isIOS && (
+            <PermissionCard
+              icon={Smartphone}
+              label="Sensor de movimento"
+              status={motionStatus}
+              value={
+                motionStatus === 'success'
+                  ? `${motionData?.motionSampleCount} amostras coletadas`
+                  : motionStatus === 'denied'
+                  ? 'Permissão negada — registrado como negado'
+                  : 'Acelerômetro e giroscópio para verificação de autenticidade'
+              }
+              onRequest={handleRequestMotion}
+              loading={loading}
+              disabled={!geoHandled}
+            />
+          )}
+
+          {!isIOS && !loading && (
+            <div className="flex items-start gap-2 rounded-lg border border-border bg-muted/20 p-3 text-xs text-muted-foreground">
+              <Smartphone size={13} className="flex-shrink-0 mt-0.5" />
+              <span>Sensor de movimento coletado automaticamente em Android e desktop.</span>
             </div>
           )}
         </div>
-
-        {/* Motion sensor permission (iOS only) */}
-        {isIOS && (
-          <div className="geo-card" style={{ marginBottom: 12, flexDirection: 'column', alignItems: 'stretch', gap: 10 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-              <span className="geo-icon">📱</span>
-              <div style={{ flex: 1 }}>
-                <p className="geo-label">Sensor de movimento</p>
-                {motionStatus === 'success' ? (
-                  <p className="geo-value" style={{ color: 'var(--success)' }}>
-                    {motionData?.motionSampleCount} amostras coletadas
-                  </p>
-                ) : motionStatus === 'denied' ? (
-                  <p style={{ fontSize: 13, color: 'var(--warning)' }}>Permissão negada — registrado como negado</p>
-                ) : (
-                  <p style={{ fontSize: 13, color: 'var(--text-secondary)' }}>Acelerômetro e giroscópio para verificação de autenticidade</p>
-                )}
-              </div>
-              {motionStatus === 'success' && <span style={{ color: 'var(--success)', fontSize: 18 }}>✓</span>}
-            </div>
-            {motionStatus === 'idle' && !loading && geoHandled && (
-              <button className="btn btn-primary" style={{ padding: '8px 16px', fontSize: 13 }} onClick={handleRequestMotion}>
-                Solicitar sensor de movimento
-              </button>
-            )}
-            {motionStatus === 'requesting' && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: 'var(--text-secondary)' }}>
-                <div className="spinner spinner-dark" style={{ width: 14, height: 14 }} />
-                Coletando dados do sensor (2s)...
-              </div>
-            )}
-          </div>
-        )}
-
-        {!isIOS && !loading && (
-          <div className="alert alert-info" style={{ marginBottom: 0 }}>
-            <span>📱</span>
-            <span>Sensor de movimento coletado automaticamente em Android e desktop.</span>
-          </div>
-        )}
       </div>
 
-      <div className="card-footer">
-        <button
-          className="btn btn-primary"
-          onClick={handleContinue}
+      <div className="px-6 py-4 border-t border-border">
+        <Button
+          className="w-full"
+          size="lg"
+          onClick={() => onNext({ ...browserData, ...geoData, ...motionData })}
           disabled={!canContinue}
         >
-          {canContinue ? 'Continuar →' : (
-            <><div className="spinner" style={{ width: 14, height: 14 }} /> Aguardando permissões...</>
+          {canContinue ? (
+            <><span>Continuar</span><ArrowRight size={16} /></>
+          ) : (
+            <><Loader2 size={16} className="animate-spin" /><span>Aguardando permissões...</span></>
           )}
-        </button>
+        </Button>
       </div>
     </>
   )

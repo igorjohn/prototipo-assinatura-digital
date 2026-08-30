@@ -1,3 +1,9 @@
+import { ScrollArea } from '@/components/ui/scroll-area'
+import { Button } from '@/components/ui/button'
+import { Separator } from '@/components/ui/separator'
+import { Badge } from '@/components/ui/badge'
+import { CheckCircle, Download, User, Globe, MapPin, Monitor, Fingerprint, Battery, FileText } from 'lucide-react'
+
 function DataRow({ label, value }) {
   if (value === null || value === undefined || value === '') return null
   const display = typeof value === 'boolean' ? (value ? 'Sim' : 'Não')
@@ -5,18 +11,23 @@ function DataRow({ label, value }) {
     : typeof value === 'object' ? JSON.stringify(value)
     : String(value)
   return (
-    <div className="data-row">
-      <span className="data-key">{label}</span>
-      <span className="data-value">{display}</span>
+    <div className="flex gap-3 py-2 border-b border-border/50 last:border-0">
+      <span className="text-[12px] text-muted-foreground min-w-[120px] flex-shrink-0">{label}</span>
+      <span className="text-[12px] text-foreground font-medium break-all">{display}</span>
     </div>
   )
 }
 
-function Section({ title, children }) {
+function Section({ icon: Icon, title, children }) {
   return (
-    <div className="data-section">
-      <p className="data-section-title">{title}</p>
-      {children}
+    <div className="mb-4">
+      <div className="flex items-center gap-1.5 mb-2">
+        <Icon size={12} className="text-muted-foreground" />
+        <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">{title}</p>
+      </div>
+      <div className="rounded-lg border border-border bg-card px-3">
+        {children}
+      </div>
     </div>
   )
 }
@@ -26,7 +37,7 @@ function downloadJson(data) {
   const url = URL.createObjectURL(blob)
   const a = document.createElement('a')
   a.href = url
-  a.download = `comprovante-assinatura-${new Date().toISOString().slice(0,10)}.json`
+  a.download = `comprovante-assinatura-${new Date().toISOString().slice(0, 10)}.json`
   a.click()
   URL.revokeObjectURL(url)
 }
@@ -36,43 +47,54 @@ export function ReceiptStep({ data }) {
 
   return (
     <>
-      <div className="card-body">
-        <p className="step-title" style={{ textAlign: 'center', color: 'var(--success)' }}>
-          ✅ Assinatura concluída!
-        </p>
-        <p className="step-desc" style={{ textAlign: 'center', marginBottom: 20 }}>
-          Documento assinado com sucesso. Abaixo estão todos os dados registrados para fins de comprovação.
-        </p>
-
-        {selfieBase64 && (
-          <div className="selfie-oval-wrapper">
-            <img src={selfieBase64} alt="Selfie capturada" className="selfie-oval" />
+      <div className="p-6">
+        {/* Success header */}
+        <div className="flex flex-col items-center mb-6">
+          {selfieBase64 && (
+            <div className="mb-4">
+              <img
+                src={selfieBase64}
+                alt="Selfie capturada"
+                className="w-[100px] h-[125px] object-cover border-[3px] border-success shadow-md"
+                style={{ borderRadius: '50%' }}
+              />
+            </div>
+          )}
+          <div className="flex items-center gap-2 mb-1">
+            <CheckCircle size={20} className="text-success" />
+            <h2 className="text-lg font-bold text-foreground">Assinatura concluída!</h2>
           </div>
-        )}
+          <p className="text-sm text-muted-foreground text-center">
+            Documento assinado com sucesso. Abaixo estão todos os dados registrados.
+          </p>
+          <Badge variant="outline" className="mt-3 text-success border-success/40 text-[11px]">
+            Comprovante gerado
+          </Badge>
+        </div>
 
-        <div className="scrollable">
-          <Section title="Assinante">
+        <ScrollArea className="h-[380px] pr-1">
+          <Section icon={User} title="Assinante">
             <DataRow label="Nome" value={data.signerName} />
             <DataRow label="CPF" value={data.signerCpf} />
             <DataRow label="E-mail" value={data.signerEmail} />
           </Section>
 
-          <Section title="Documento">
+          <Section icon={FileText} title="Documento">
             <DataRow label="Data/hora UTC" value={data.timestamp} />
             <DataRow label="Selfie capturada" value={data.selfieTimestamp} />
-            <div className="data-row">
-              <span className="data-key">Hash SHA-256</span>
-              <span className="data-value receipt-hash">{data.documentHash}</span>
+            <div className="flex gap-3 py-2">
+              <span className="text-[12px] text-muted-foreground min-w-[120px] flex-shrink-0">Hash SHA-256</span>
+              <span className="text-[10px] font-mono text-muted-foreground break-all bg-muted/50 px-2 py-1 rounded">{data.documentHash}</span>
             </div>
           </Section>
 
-          <Section title="Localização GPS">
+          <Section icon={MapPin} title="Localização GPS">
             <DataRow label="GPS lat/lng" value={data.gpsLatitude && `${data.gpsLatitude?.toFixed(6)}, ${data.gpsLongitude?.toFixed(6)}`} />
-            <DataRow label="Precisão GPS" value={data.gpsAccuracy && `±${data.gpsAccuracy}m`} />
+            <DataRow label="Precisão" value={data.gpsAccuracy && `±${data.gpsAccuracy}m`} />
             <DataRow label="Geoloc. negada" value={data.geoDenied} />
           </Section>
 
-          <Section title="Rede / IP">
+          <Section icon={Globe} title="Rede / IP">
             <DataRow label="IP" value={data.ip} />
             <DataRow label="Cidade" value={data.city} />
             <DataRow label="Estado" value={data.region} />
@@ -82,27 +104,19 @@ export function ReceiptStep({ data }) {
             <DataRow label="Fuso (IP)" value={data.timezone} />
           </Section>
 
-          <Section title="Dispositivo">
+          <Section icon={Monitor} title="Dispositivo e tela">
             <DataRow label="Plataforma" value={data.platform} />
             <DataRow label="Idioma" value={data.language} />
-            <DataRow label="Memória RAM" value={data.deviceMemory && `${data.deviceMemory} GB`} />
+            <DataRow label="RAM" value={data.deviceMemory && `${data.deviceMemory} GB`} />
             <DataRow label="Núcleos CPU" value={data.hardwareConcurrency} />
             <DataRow label="Touch points" value={data.maxTouchPoints} />
             <DataRow label="On-line" value={data.onLine} />
-            <DataRow label="Cookies ativos" value={data.cookiesEnabled} />
-            <DataRow label="Do Not Track" value={data.doNotTrack} />
-          </Section>
-
-          <Section title="Tela">
             <DataRow label="Resolução" value={data.screenWidth && `${data.screenWidth}×${data.screenHeight}`} />
-            <DataRow label="Disponível" value={data.screenAvailWidth && `${data.screenAvailWidth}×${data.screenAvailHeight}`} />
-            <DataRow label="Profundidade cor" value={data.screenColorDepth && `${data.screenColorDepth} bits`} />
             <DataRow label="Pixel ratio" value={data.devicePixelRatio} />
-            <DataRow label="Fuso (local)" value={data.timezone} />
             <DataRow label="Offset fuso" value={data.timezoneOffset !== undefined && `UTC${data.timezoneOffset > 0 ? `-${data.timezoneOffset / 60}` : `+${Math.abs(data.timezoneOffset) / 60}`}`} />
           </Section>
 
-          <Section title="Fingerprint">
+          <Section icon={Fingerprint} title="Fingerprint">
             <DataRow label="Visitor ID" value={data.visitorId} />
             <DataRow label="Canvas hash" value={data.canvasHash?.slice(0, 32) + '...'} />
             <DataRow label="WebGL vendor" value={data.webglVendor} />
@@ -111,29 +125,30 @@ export function ReceiptStep({ data }) {
           </Section>
 
           {data.battery && (
-            <Section title="Bateria">
+            <Section icon={Battery} title="Bateria">
               <DataRow label="Nível" value={`${data.battery.level}%`} />
               <DataRow label="Carregando" value={data.battery.charging} />
             </Section>
           )}
 
-          <Section title="Plugins">
-            <DataRow label="Plugins" value={data.plugins?.length ? data.plugins : 'Nenhum detectado'} />
-          </Section>
-
-          <Section title="User Agent completo">
-            <div className="data-row">
-              <span className="data-value receipt-hash" style={{ minWidth: 0 }}>{data.userAgent}</span>
+          <Section icon={Monitor} title="User Agent">
+            <div className="py-2">
+              <p className="text-[11px] font-mono text-muted-foreground break-all">{data.userAgent}</p>
             </div>
           </Section>
-        </div>
+        </ScrollArea>
       </div>
 
-      <div className="card-footer" style={{ flexDirection: 'column', gap: 8 }}>
-        <button className="btn btn-success" onClick={() => downloadJson({ ...data, selfieBase64: selfieBase64 ? '[base64 omitido — presente no JSON completo]' : null, selfieBase64Full: selfieBase64 })}>
-          ⬇️ Baixar comprovante JSON
-        </button>
-        <p style={{ fontSize: 11, color: 'var(--text-secondary)', textAlign: 'center' }}>
+      <div className="px-6 py-4 border-t border-border flex flex-col gap-3">
+        <Button
+          className="w-full bg-success hover:bg-success/90 text-success-foreground"
+          size="lg"
+          onClick={() => downloadJson({ ...data, selfieBase64: selfieBase64 ? '[base64 presente no arquivo JSON]' : null, selfieBase64Full: selfieBase64 })}
+        >
+          <Download size={16} />
+          Baixar comprovante JSON
+        </Button>
+        <p className="text-[11px] text-muted-foreground text-center">
           Este arquivo contém todos os dados da assinatura, incluindo a selfie em base64.
         </p>
       </div>

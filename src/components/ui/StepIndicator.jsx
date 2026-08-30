@@ -1,34 +1,53 @@
+import { FileText, User, MapPin, Camera, CheckCircle, Check } from 'lucide-react'
+import { cn } from '@/lib/utils'
+
 const STEP_CONFIG = [
-  { key: 'welcome', label: 'Documento', icon: '📄' },
-  { key: 'userData', label: 'Dados', icon: '👤' },
-  { key: 'geo', label: 'Localização', icon: '📍' },
-  { key: 'selfie', label: 'Selfie', icon: '📷' },
-  { key: 'receipt', label: 'Conclusão', icon: '✅' },
+  { key: 'welcome', label: 'Documento', Icon: FileText },
+  { key: 'userData', label: 'Dados', Icon: User },
+  { key: 'geo', label: 'Localização', Icon: MapPin },
+  { key: 'selfie', label: 'Selfie', Icon: Camera },
+  { key: 'receipt', label: 'Conclusão', Icon: CheckCircle },
 ]
 
 export function StepIndicator({ currentStep }) {
   const currentIdx = STEP_CONFIG.findIndex(s => s.key === currentStep)
 
   return (
-    <div className="step-indicator">
-      {STEP_CONFIG.map((step, idx) => (
-        <div key={step.key} style={{ display: 'flex', flex: 1, alignItems: 'center', flexDirection: 'column' }}>
-          <div style={{ display: 'flex', width: '100%', alignItems: 'center' }}>
-            {idx > 0 && (
-              <div className={`step-connector${idx <= currentIdx ? ' done' : ''}`} />
-            )}
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, flex: idx === 0 || idx === STEP_CONFIG.length - 1 ? 'none' : undefined }}>
-              <div className={`step-dot ${idx < currentIdx ? 'done' : idx === currentIdx ? 'active' : 'pending'}`}>
-                {idx < currentIdx ? '✓' : step.icon}
+    <div className="px-6 py-4 border-b border-border bg-card">
+      <div className="flex items-center">
+        {STEP_CONFIG.map((step, idx) => (
+          <div key={step.key} className="flex items-center flex-1 last:flex-none">
+            <div className="flex flex-col items-center gap-1.5 relative">
+              <div
+                className={cn(
+                  'flex items-center justify-center w-8 h-8 rounded-full text-[13px] font-semibold transition-all duration-200 relative z-10',
+                  idx < currentIdx && 'bg-success text-success-foreground',
+                  idx === currentIdx && 'bg-primary text-primary-foreground ring-4 ring-primary/15',
+                  idx > currentIdx && 'bg-muted text-muted-foreground'
+                )}
+              >
+                {idx < currentIdx ? <Check size={14} strokeWidth={2.5} /> : <step.Icon size={14} strokeWidth={idx === currentIdx ? 2.5 : 2} />}
               </div>
+              <span
+                className={cn(
+                  'text-[9px] whitespace-nowrap font-medium',
+                  idx === currentIdx ? 'text-primary font-semibold' : 'text-muted-foreground'
+                )}
+              >
+                {step.label}
+              </span>
             </div>
             {idx < STEP_CONFIG.length - 1 && (
-              <div className={`step-connector${idx < currentIdx ? ' done' : ''}`} />
+              <div
+                className={cn(
+                  'flex-1 h-[2px] mb-4 mx-1 transition-colors duration-300',
+                  idx < currentIdx ? 'bg-success' : 'bg-border'
+                )}
+              />
             )}
           </div>
-          <span className={`step-label${idx === currentIdx ? ' active' : ''}`}>{step.label}</span>
-        </div>
-      ))}
+        ))}
+      </div>
     </div>
   )
 }

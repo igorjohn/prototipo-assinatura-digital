@@ -1,4 +1,8 @@
 import { useState } from 'react'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { ArrowRight, User } from 'lucide-react'
 
 function formatCPF(value) {
   const digits = value.replace(/\D/g, '').slice(0, 11)
@@ -49,57 +53,66 @@ export function UserDataStep({ onNext }) {
 
   return (
     <>
-      <div className="card-body">
-        <p className="step-title">Seus dados</p>
-        <p className="step-desc">
+      <div className="p-6">
+        <div className="flex items-center gap-2 mb-1">
+          <User size={16} className="text-primary" />
+          <h2 className="text-lg font-bold text-foreground">Seus dados</h2>
+        </div>
+        <p className="text-sm text-muted-foreground mb-5">
           Informe seus dados para identificação do assinante. Eles serão incluídos no comprovante de assinatura.
         </p>
 
-        <div className="form-group">
-          <label className="form-label">Nome completo</label>
-          <input
-            className={`form-input${errors.name ? ' error' : ''}`}
-            name="name"
-            value={fields.name}
-            onChange={handleChange}
-            placeholder="Ex.: Maria da Silva Santos"
-            autoComplete="name"
-          />
-          {errors.name && <p className="form-error">{errors.name}</p>}
-        </div>
+        <div className="space-y-4">
+          <div className="space-y-1.5">
+            <Label htmlFor="name">Nome completo</Label>
+            <Input
+              id="name"
+              name="name"
+              value={fields.name}
+              onChange={handleChange}
+              placeholder="Ex.: Maria da Silva Santos"
+              autoComplete="name"
+              className={errors.name ? 'border-destructive focus-visible:ring-destructive' : ''}
+            />
+            {errors.name && <p className="text-xs text-destructive">{errors.name}</p>}
+          </div>
 
-        <div className="form-group">
-          <label className="form-label">CPF</label>
-          <input
-            className={`form-input${errors.cpf ? ' error' : ''}`}
-            name="cpf"
-            value={fields.cpf}
-            onChange={handleChange}
-            placeholder="000.000.000-00"
-            inputMode="numeric"
-          />
-          {errors.cpf && <p className="form-error">{errors.cpf}</p>}
-        </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="cpf">CPF</Label>
+            <Input
+              id="cpf"
+              name="cpf"
+              value={fields.cpf}
+              onChange={handleChange}
+              placeholder="000.000.000-00"
+              inputMode="numeric"
+              className={errors.cpf ? 'border-destructive focus-visible:ring-destructive' : ''}
+            />
+            {errors.cpf && <p className="text-xs text-destructive">{errors.cpf}</p>}
+          </div>
 
-        <div className="form-group">
-          <label className="form-label">E-mail</label>
-          <input
-            className={`form-input${errors.email ? ' error' : ''}`}
-            name="email"
-            type="email"
-            value={fields.email}
-            onChange={handleChange}
-            placeholder="seu@email.com"
-            autoComplete="email"
-          />
-          {errors.email && <p className="form-error">{errors.email}</p>}
+          <div className="space-y-1.5">
+            <Label htmlFor="email">E-mail</Label>
+            <Input
+              id="email"
+              name="email"
+              type="email"
+              value={fields.email}
+              onChange={handleChange}
+              placeholder="seu@email.com"
+              autoComplete="email"
+              className={errors.email ? 'border-destructive focus-visible:ring-destructive' : ''}
+            />
+            {errors.email && <p className="text-xs text-destructive">{errors.email}</p>}
+          </div>
         </div>
       </div>
 
-      <div className="card-footer">
-        <button className="btn btn-primary" onClick={handleSubmit}>
-          Continuar →
-        </button>
+      <div className="px-6 py-4 border-t border-border">
+        <Button className="w-full" size="lg" onClick={handleSubmit}>
+          Continuar
+          <ArrowRight size={16} />
+        </Button>
       </div>
     </>
   )

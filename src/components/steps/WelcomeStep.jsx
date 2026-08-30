@@ -1,3 +1,8 @@
+import { ScrollArea } from '@/components/ui/scroll-area'
+import { Button } from '@/components/ui/button'
+import { Alert, AlertDescription } from '@/components/ui/alert'
+import { Shield, ArrowRight, FileText } from 'lucide-react'
+
 const DOCUMENT_TEXT = `CONTRATO DE PRESTAÇÃO DE SERVIÇOS DIGITAIS
 
 Entre as partes identificadas no processo de assinatura, doravante denominadas CONTRATANTE e CONTRATADA, firmam o presente contrato nos termos a seguir.
@@ -27,34 +32,43 @@ export const CONTRACT_TEXT = DOCUMENT_TEXT
 export function WelcomeStep({ onNext }) {
   return (
     <>
-      <div className="card-body">
-        <p className="step-title">Documento para assinatura</p>
-        <p className="step-desc">
+      <div className="p-6">
+        <div className="flex items-center gap-2 mb-1">
+          <FileText size={16} className="text-primary" />
+          <h2 className="text-lg font-bold text-foreground">Documento para assinatura</h2>
+        </div>
+        <p className="text-sm text-muted-foreground mb-4">
           Leia o documento abaixo com atenção. Ao continuar, você confirma que leu e concorda com os termos.
         </p>
-        <div className="document-preview">
-          <h3>Contrato de Prestação de Serviços</h3>
-          {DOCUMENT_TEXT.split('\n').filter(l => l.trim()).map((line, i) => (
-            <p key={i} className={line.startsWith('CLÁUSULA') ? 'clause' : ''}>
-              {line.startsWith('CLÁUSULA') ? (
-                <><span className="clause-title">{line.split(' - ')[0]} - </span>{line.split(' - ').slice(1).join(' - ')}</>
-              ) : line}
-            </p>
-          ))}
+
+        <div className="border border-border rounded-lg overflow-hidden mb-4">
+          <div className="bg-muted/50 px-4 py-2.5 border-b border-border">
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Contrato de Prestação de Serviços</p>
+          </div>
+          <ScrollArea className="h-[280px]">
+            <div className="p-4 space-y-2.5 text-[13px] leading-relaxed text-foreground">
+              {DOCUMENT_TEXT.split('\n').filter(l => l.trim()).map((line, i) => (
+                <p key={i} className={line.startsWith('CLÁUSULA') ? 'font-semibold text-primary text-[12px] uppercase tracking-wide mt-3' : ''}>
+                  {line}
+                </p>
+              ))}
+            </div>
+          </ScrollArea>
         </div>
 
-        <div className="alert alert-warning">
-          <span>🔒</span>
-          <div>
-            <strong>Assinatura com validade jurídica.</strong> Serão coletados dados do dispositivo, localização e selfie para garantir a autenticidade desta assinatura.
-          </div>
-        </div>
+        <Alert className="border-warning/30 bg-warning/10">
+          <Shield size={14} className="text-warning-foreground" />
+          <AlertDescription className="text-warning-foreground text-[13px]">
+            <span className="font-semibold">Assinatura com validade jurídica.</span> Serão coletados dados do dispositivo, localização e selfie para garantir a autenticidade desta assinatura.
+          </AlertDescription>
+        </Alert>
       </div>
 
-      <div className="card-footer">
-        <button className="btn btn-primary" onClick={onNext}>
-          Li e quero assinar →
-        </button>
+      <div className="px-6 py-4 border-t border-border">
+        <Button className="w-full" size="lg" onClick={onNext}>
+          Li e quero assinar
+          <ArrowRight size={16} />
+        </Button>
       </div>
     </>
   )

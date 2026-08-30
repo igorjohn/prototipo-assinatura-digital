@@ -1,5 +1,7 @@
 import { useRef, useEffect, useState, useCallback } from 'react'
-import { loadFaceDetectionModels, detectFace, getFaceStatus } from '../../lib/faceDetection'
+import { loadFaceDetectionModels, detectFace, getFaceStatus } from '@/lib/faceDetection'
+import { cn } from '@/lib/utils'
+import { Loader2 } from 'lucide-react'
 
 const OVAL_RATIO = 0.72
 const OVAL_ASPECT = 1.32
@@ -20,38 +22,32 @@ const STATUS_COLORS = {
 }
 
 const STATUS_MESSAGES = {
-  loading_models: '⏳ Carregando detecção de rosto...',
-  camera_error:   '❌ Erro ao acessar a câmera. Verifique as permissões.',
-  no_face:        '👤 Posicione seu rosto dentro da moldura',
-  too_close:      '↔️ Afaste-se um pouco da câmera',
-  too_far:        '🔍 Aproxime-se um pouco mais da câmera',
-  move_up:        '⬆️ Suba o rosto um pouco',
-  move_down:      '⬇️ Desça o rosto um pouco',
-  move_left:      '➡️ Mova o rosto para a direita',
-  move_right:     '⬅️ Mova o rosto para a esquerda',
-  not_centered:   '🎯 Centralize seu rosto na moldura',
-  misaligned:     '🎯 Centralize seu rosto na moldura',
-  aligned:        '✅ Perfeito! Segure assim...',
+  loading_models: 'Carregando detecção de rosto...',
+  camera_error:   'Erro ao acessar a câmera. Verifique as permissões.',
+  no_face:        'Posicione seu rosto dentro da moldura',
+  too_close:      'Afaste-se um pouco da câmera',
+  too_far:        'Aproxime-se um pouco mais da câmera',
+  move_up:        'Suba o rosto um pouco',
+  move_down:      'Desça o rosto um pouco',
+  move_left:      'Mova o rosto para a direita',
+  move_right:     'Mova o rosto para a esquerda',
+  not_centered:   'Centralize seu rosto na moldura',
+  misaligned:     'Centralize seu rosto na moldura',
+  aligned:        'Perfeito! Segure assim...',
 }
 
 function drawOverlay(ctx, w, h, status) {
   ctx.clearRect(0, 0, w, h)
-
-  const cx = w / 2
-  const cy = h / 2
-  const rx = (w * OVAL_RATIO) / 2
-  const ry = rx * OVAL_ASPECT
-
+  const cx = w / 2, cy = h / 2
+  const rx = (w * OVAL_RATIO) / 2, ry = rx * OVAL_ASPECT
   ctx.fillStyle = 'rgba(0, 0, 0, 0.55)'
   ctx.fillRect(0, 0, w, h)
-
   ctx.globalCompositeOperation = 'destination-out'
   ctx.beginPath()
   ctx.ellipse(cx, cy, rx, ry, 0, 0, Math.PI * 2)
   ctx.fillStyle = 'rgba(255,255,255,1)'
   ctx.fill()
   ctx.globalCompositeOperation = 'source-over'
-
   const color = STATUS_COLORS[status] || '#6b7280'
   ctx.strokeStyle = color
   ctx.lineWidth = 3.5
@@ -61,7 +57,6 @@ function drawOverlay(ctx, w, h, status) {
   ctx.ellipse(cx, cy, rx, ry, 0, 0, Math.PI * 2)
   ctx.stroke()
   ctx.shadowBlur = 0
-
   return { cx, cy, rx, ry }
 }
 
@@ -79,74 +74,48 @@ export function OvalCamera({ onCapture }) {
   const [cameraReady, setCameraReady] = useState(false)
 
   useEffect(() => {
-    loadFaceDetectionModels()
-      .then(() => setModelsReady(true))
-      .catch(() => setStatus('camera_error'))
+    loadFaceDetectionModels().then(() => setModelsReady(true)).catch(() => setStatus('camera_error'))
   }, [])
 
   useEffect(() => {
     let stream = null
     async function startCamera() {
       try {
-        stream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 640 } },
-        })
+        stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 640 } } })
         if (videoRef.current) {
           videoRef.current.srcObject = stream
           await videoRef.current.play()
           setCameraReady(true)
         }
-      } catch {
-        setStatus('camera_error')
-      }
+      } catch { setStatus('camera_error') }
     }
     startCamera()
-    return () => {
-      if (stream) stream.getTracks().forEach(t => t.stop())
-    }
+    return () => { if (stream) stream.getTracks().forEach(t => t.stop()) }
   }, [])
 
   useEffect(() => {
     if (!modelsReady || !cameraReady) return
     setStatus('no_face')
-
     async function loop() {
-      const video = videoRef.current
-      const canvas = canvasRef.current
-      if (!video || !canvas || video.paused || video.ended) {
-        animFrameRef.current = requestAnimationFrame(loop)
-        return
-      }
+      const video = videoRef.current, canvas = canvasRef.current
+      if (!video || !canvas || video.paused || video.ended) { animFrameRef.current = requestAnimationFrame(loop); return }
       const { videoWidth: w, videoHeight: h } = video
-      if (!w || !h) {
-        animFrameRef.current = requestAnimationFrame(loop)
-        return
-      }
-      canvas.width = w
-      canvas.height = h
+      if (!w || !h) { animFrameRef.current = requestAnimationFrame(loop); return }
+      canvas.width = w; canvas.height = h
       const ctx = canvas.getContext('2d')
-
       if (!isDetectingRef.current) {
         isDetectingRef.current = true
         detectFace(video).then(detection => {
           isDetectingRef.current = false
-          const ovalBounds = {
-            cx: w / 2, cy: h / 2,
-            rx: (w * OVAL_RATIO) / 2,
-            ry: (w * OVAL_RATIO * OVAL_ASPECT) / 2,
-          }
+          const ovalBounds = { cx: w / 2, cy: h / 2, rx: (w * OVAL_RATIO) / 2, ry: (w * OVAL_RATIO * OVAL_ASPECT) / 2 }
           setStatus(getFaceStatus(detection, ovalBounds))
         })
       }
-
       drawOverlay(ctx, w, h, status)
       animFrameRef.current = requestAnimationFrame(loop)
     }
-
     loop()
-    return () => {
-      if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current)
-    }
+    return () => { if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current) }
   }, [modelsReady, cameraReady])
 
   useEffect(() => {
@@ -177,37 +146,37 @@ export function OvalCamera({ onCapture }) {
     const video = videoRef.current
     if (!video) return
     const cap = document.createElement('canvas')
-    cap.width = video.videoWidth
-    cap.height = video.videoHeight
-    const ctx = cap.getContext('2d')
-    ctx.drawImage(video, 0, 0)
+    cap.width = video.videoWidth; cap.height = video.videoHeight
+    cap.getContext('2d').drawImage(video, 0, 0)
     onCapture(cap.toDataURL('image/jpeg', 0.85))
   }, [onCapture])
 
   return (
-    <div>
+    <div className="space-y-3">
       <div className="camera-container">
         <video ref={videoRef} className="camera-video" muted playsInline />
         <canvas ref={canvasRef} className="camera-canvas" />
 
         {(status === 'loading_models' || (!modelsReady && !cameraReady)) && (
-          <div className="camera-loading">
-            <div className="spinner" />
+          <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/70 gap-3 text-white text-sm">
+            <Loader2 size={24} className="animate-spin" />
             <span>Iniciando câmera e modelos de IA...</span>
           </div>
         )}
 
         {countdown !== null && countdown > 0 && (
-          <div className="camera-countdown">{countdown}</div>
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
+            <span className="text-white text-7xl font-extrabold drop-shadow-2xl">{countdown}</span>
+          </div>
         )}
 
-        <div className="camera-status-bar" style={{ background: `rgba(0,0,0,0.7)` }}>
-          <span style={{ fontSize: 13 }}>{STATUS_MESSAGES[status] || ''}</span>
+        <div className="absolute bottom-0 left-0 right-0 px-4 py-3 bg-black/65 text-white text-[13px] font-medium text-center">
+          {STATUS_MESSAGES[status] || ''}
         </div>
       </div>
 
-      <div className="alert alert-info" style={{ marginBottom: 0 }}>
-        <span>💡</span>
+      <div className="flex items-start gap-2 rounded-lg border border-border bg-muted/30 p-3 text-[12px] text-muted-foreground">
+        <span className="mt-0.5 text-primary text-[14px]">●</span>
         <span>Posicione seu rosto centralizado na moldura. A captura é automática quando a moldura ficar verde.</span>
       </div>
     </div>
