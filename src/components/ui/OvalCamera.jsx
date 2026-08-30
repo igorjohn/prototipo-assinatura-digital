@@ -1,15 +1,24 @@
 import { useRef, useEffect, useState, useCallback } from 'react'
-import { loadFaceDetectionModels, detectFace, detectFaceWithLandmarks, getFaceStatus, getEAR } from '@/lib/faceDetection'
+import { loadFaceDetectionModels, detectFace, detectFaceWithLandmarks, getFaceStatus, getHeadAngles } from '@/lib/faceDetection'
 import { IconLoader2 } from '@tabler/icons-react'
 
 const OVAL_RATIO = 0.72
 const OVAL_ASPECT = 1.32
 const ALIGNED_HOLD_MS = 1200
-const EAR_CLOSED = 0.22
-const EAR_OPEN = 0.28
 const BRIGHTNESS_DARK = 28
 const BRIGHTNESS_DIM = 50
-const BRIGHTNESS_SAMPLE_EVERY = 20 // frames
+const BRIGHTNESS_SAMPLE_EVERY = 20
+
+// Desafios de liveness por movimento de cabeça
+const CHALLENGE_TYPES = ['turn', 'nod']
+const CHALLENGE_MSG = {
+  turn: 'Vire a cabeça lentamente para um lado',
+  nod: 'Acene com a cabeça para baixo',
+}
+// turn: detecta yaw absoluto > limiar
+// nod: detecta deslocamento Y do centro da face > limiar (face desce no frame)
+const YAW_THRESHOLD = 0.11
+const NOD_RATIO = 0.16
 
 function sampleBrightness(video) {
   try {
@@ -85,24 +94,22 @@ export function OvalCamera({ onCapture }) {
   const isDetectingRef = useRef(false)
   const alignedSinceRef = useRef(null)
 
-  // Challenge refs (updated synchronously inside loop)
-  const phaseRef = useRef('positioning') // 'positioning' | 'challenge' | 'done'
-  const blinkStateRef = useRef('open')   // 'open' | 'closing'
-  const blinkCountRef = useRef(0)
-  const challengeRef = useRef(null)      // { count: 1|2 }
+  // Challenge refs
+  const phaseRef = useRef('positioning')  // 'positioning' | 'challenge' | 'done'
+  const challengeRef = useRef(null)       // { type: 'turn' | 'nod' }
+  const motionDetectedRef = useRef(false)
+  const baseFaceCenterYRef = useRef(null) // baseline para detecção de nod
   const overlayColorRef = useRef('#6b7280')
   const overlayMsgRef = useRef('')
   const frameCountRef = useRef(0)
-  const brightnessRef = useRef(255)
 
   const [status, setStatus] = useState('loading_models')
   const [modelsReady, setModelsReady] = useState(false)
   const [cameraReady, setCameraReady] = useState(false)
   const [phase, setPhase] = useState('positioning')
   const [challenge, setChallenge] = useState(null)
-  const [blinksCount, setBlinksCount] = useState(0)
   const [bottomMsg, setBottomMsg] = useState('')
-  const [brightnessLevel, setBrightnessLevel] = useState('ok') // 'ok' | 'dim' | 'dark'
+  const [brightnessLevel, setBrightnessLevel] = useState('ok')
 
   useEffect(() => {
     loadFaceDetectionModels()
@@ -162,11 +169,9 @@ export function OvalCamera({ onCapture }) {
         isDetectingRef.current = true
         const ovalBounds = { cx: w/2, cy: h/2, rx: (w*OVAL_RATIO)/2, ry: (w*OVAL_RATIO*OVAL_ASPECT)/2 }
 
-        // Sample brightness every N frames
         frameCountRef.current++
         if (frameCountRef.current % BRIGHTNESS_SAMPLE_EVERY === 0 && phaseRef.current === 'positioning') {
           const lum = sampleBrightness(video)
-          brightnessRef.current = lum
           const lvl = lum < BRIGHTNESS_DARK ? 'dark' : lum < BRIGHTNESS_DIM ? 'dim' : 'ok'
           setBrightnessLevel(lvl)
         }
@@ -184,19 +189,18 @@ export function OvalCamera({ onCapture }) {
             if (fs === 'aligned') {
               if (!alignedSinceRef.current) alignedSinceRef.current = Date.now()
               if (Date.now() - alignedSinceRef.current >= ALIGNED_HOLD_MS) {
-                const count = Math.random() < 0.5 ? 1 : 2
-                const ch = { count }
+                const type = CHALLENGE_TYPES[Math.floor(Math.random() * CHALLENGE_TYPES.length)]
+                const ch = { type }
                 challengeRef.current = ch
-                blinkCountRef.current = 0
-                blinkStateRef.current = 'open'
+                motionDetectedRef.current = false
+                baseFaceCenterYRef.current = null
                 phaseRef.current = 'challenge'
                 overlayColorRef.current = '#0e9f6e'
-                const challengeLabel = count === 1 ? 'Pisque 1 vez' : 'Pisque 2 vezes'
-                overlayMsgRef.current = challengeLabel
-                setBottomMsg(challengeLabel)
+                const label = CHALLENGE_MSG[type]
+                overlayMsgRef.current = label
+                setBottomMsg(label)
                 setChallenge(ch)
                 setPhase('challenge')
-                setBlinksCount(0)
                 alignedSinceRef.current = null
               }
             } else {
@@ -209,38 +213,42 @@ export function OvalCamera({ onCapture }) {
             const ch = challengeRef.current
 
             if (!result?.landmarks) {
-              const msg = 'Reposicione seu rosto na moldura'
               overlayColorRef.current = '#d97706'
+              const msg = 'Reposicione seu rosto na moldura'
               overlayMsgRef.current = msg
               setBottomMsg(msg)
               return
             }
 
             overlayColorRef.current = '#0e9f6e'
-            const ear = getEAR(result.landmarks)
+            const { yaw } = getHeadAngles(result.landmarks)
+            const box = result.detection.box
+            const centerY = box.y + box.height / 2
 
-            if (blinkStateRef.current === 'open' && ear < EAR_CLOSED) {
-              blinkStateRef.current = 'closing'
-            } else if (blinkStateRef.current === 'closing' && ear > EAR_OPEN) {
-              blinkStateRef.current = 'open'
-              blinkCountRef.current += 1
-              const n = blinkCountRef.current
-              setBlinksCount(n)
+            let detected = false
 
-              if (n >= ch.count) {
-                phaseRef.current = 'done'
-                const msg = 'Verificado! Capturando...'
-                overlayMsgRef.current = msg
-                setBottomMsg(msg)
-                setPhase('done')
-                setTimeout(() => capturePhoto(), 600)
-                return
+            if (ch.type === 'turn') {
+              detected = Math.abs(yaw) > YAW_THRESHOLD
+            } else if (ch.type === 'nod') {
+              if (baseFaceCenterYRef.current === null) {
+                baseFaceCenterYRef.current = centerY
+              } else {
+                const deltaRatio = (centerY - baseFaceCenterYRef.current) / box.height
+                detected = deltaRatio > NOD_RATIO
               }
             }
 
-            const label = ch.count === 1
-              ? 'Pisque 1 vez'
-              : `Pisque 2 vezes (${blinkCountRef.current}/2)`
+            if (detected) {
+              phaseRef.current = 'done'
+              const msg = 'Verificado! Capturando...'
+              overlayMsgRef.current = msg
+              setBottomMsg(msg)
+              setPhase('done')
+              setTimeout(() => capturePhoto(), 600)
+              return
+            }
+
+            const label = CHALLENGE_MSG[ch.type]
             overlayMsgRef.current = label
             setBottomMsg(label)
           })
@@ -280,7 +288,7 @@ export function OvalCamera({ onCapture }) {
           <div className="absolute top-3 left-0 right-0 flex justify-center pointer-events-none z-10">
             <div className="bg-black/70 text-white text-xs font-semibold px-3 py-1.5 rounded-full flex items-center gap-2">
               <span className="inline-block w-2 h-2 rounded-full bg-green-400 animate-pulse" />
-              Desafio de segurança
+              Verificação de vivacidade
             </div>
           </div>
         )}
@@ -297,9 +305,7 @@ export function OvalCamera({ onCapture }) {
       )}
       {phase === 'challenge' && (
         <p className="text-[12px] text-center px-2 font-medium" style={{ color: '#0e9f6e' }}>
-          {challenge?.count === 1
-            ? `Piscada detectada: ${blinksCount}/1`
-            : `Piscadas detectadas: ${blinksCount}/2`}
+          {CHALLENGE_MSG[challenge?.type]}
         </p>
       )}
     </div>

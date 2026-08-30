@@ -41,6 +41,18 @@ export function getEAR(landmarks) {
   return (calcEAR(pts.slice(36, 42)) + calcEAR(pts.slice(42, 48))) / 2
 }
 
+export function getHeadAngles(landmarks) {
+  const pts = landmarks.positions
+  const nose = pts[30]
+  const leftJaw = pts[0]
+  const rightJaw = pts[16]
+  const jawCenterX = (leftJaw.x + rightJaw.x) / 2
+  const jawWidth = Math.max(rightJaw.x - leftJaw.x, 1)
+  // yaw positivo = nariz à direita do centro da mandíbula no frame bruto
+  const yaw = (nose.x - jawCenterX) / jawWidth
+  return { yaw, noseCy: nose.y }
+}
+
 export function getFaceStatus(detection, ovalBounds) {
   if (!detection) return 'no_face'
 
