@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { OvalCamera } from '@/components/ui/OvalCamera'
 import { Button } from '@/components/ui/button'
-import { Camera, Lightbulb, Shield, ScanFace, ArrowRight } from 'lucide-react'
+import { IconCamera, IconBulb, IconShield, IconFaceId, IconArrowRight } from '@tabler/icons-react'
 
 export function SelfieStep({ onNext }) {
   const [cameraOpen, setCameraOpen] = useState(false)
@@ -15,7 +15,7 @@ export function SelfieStep({ onNext }) {
       <>
         <div className="p-6">
           <div className="flex items-center gap-2 mb-1">
-            <Camera size={16} className="text-primary" />
+            <IconCamera size={16} className="text-primary" />
             <h2 className="text-lg font-bold text-foreground">Verificação por selfie</h2>
           </div>
           <p className="text-sm text-muted-foreground mb-5">
@@ -24,9 +24,9 @@ export function SelfieStep({ onNext }) {
 
           <div className="space-y-2.5 mb-5">
             {[
-              { icon: ScanFace, text: 'Posicione seu rosto dentro da moldura oval' },
-              { icon: Lightbulb, text: 'Mantenha uma boa iluminação no rosto' },
-              { icon: Camera, text: 'A captura é automática quando o rosto estiver centralizado' },
+              { icon: IconFaceId, text: 'Posicione seu rosto dentro da moldura oval' },
+              { icon: IconBulb, text: 'Mantenha uma boa iluminação no rosto' },
+              { icon: IconCamera, text: 'A captura é automática quando o rosto estiver centralizado' },
             ].map(({ icon: Icon, text }, i) => (
               <div key={i} className="flex items-start gap-3 text-sm text-muted-foreground">
                 <div className="flex items-center justify-center w-7 h-7 rounded-full bg-primary/10 flex-shrink-0 mt-0.5">
@@ -38,14 +38,14 @@ export function SelfieStep({ onNext }) {
           </div>
 
           <div className="flex items-start gap-2 rounded-lg border border-border bg-muted/30 p-3 text-[13px] text-muted-foreground">
-            <Shield size={14} className="flex-shrink-0 mt-0.5 text-primary" />
+            <IconShield size={14} className="flex-shrink-0 mt-0.5 text-primary" />
             <span>Ao continuar, o navegador solicitará permissão para usar a câmera frontal.</span>
           </div>
         </div>
 
         <div className="px-6 py-4 border-t border-border">
           <Button className="w-full" size="lg" onClick={() => setCameraOpen(true)}>
-            <Camera size={16} />
+            <IconCamera size={16} />
             Abrir câmera
           </Button>
         </div>
@@ -57,7 +57,7 @@ export function SelfieStep({ onNext }) {
     <>
       <div className="p-6">
         <div className="flex items-center gap-2 mb-1">
-          <Camera size={16} className="text-primary" />
+          <IconCamera size={16} className="text-primary" />
           <h2 className="text-lg font-bold text-foreground">Posicione seu rosto</h2>
         </div>
         <p className="text-sm text-muted-foreground mb-4">

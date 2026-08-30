@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp'
 import { REGEXP_ONLY_DIGITS } from 'input-otp'
-import { Mail, ArrowRight, RefreshCw } from 'lucide-react'
+import { IconMail, IconArrowRight, IconRefresh } from '@tabler/icons-react'
 
 export function OtpStep({ onNext, signerData }) {
   const [value, setValue] = useState('')
@@ -34,7 +34,7 @@ export function OtpStep({ onNext, signerData }) {
     <>
       <div className="p-6">
         <div className="flex items-center gap-2 mb-1">
-          <Mail size={16} className="text-primary" />
+          <IconMail size={16} className="text-primary" />
           <h2 className="text-lg font-bold text-foreground">Verificação de e-mail</h2>
         </div>
         <p className="text-sm text-muted-foreground mb-6">
@@ -62,7 +62,7 @@ export function OtpStep({ onNext, signerData }) {
         </div>
 
         <div className="flex items-center gap-2 rounded-lg border border-border bg-muted/30 p-3 text-[12px] text-muted-foreground">
-          <Mail size={12} className="flex-shrink-0" />
+          <IconMail size={12} className="flex-shrink-0" />
           <span>
             <span className="font-medium">Modo demonstração:</span> qualquer código de 5 dígitos é aceito.
           </span>
@@ -72,7 +72,7 @@ export function OtpStep({ onNext, signerData }) {
       <div className="px-6 py-4 border-t border-border space-y-2">
         <Button className="w-full" size="lg" onClick={handleVerify} disabled={value.length < 5}>
           Verificar código
-          <ArrowRight size={16} />
+          <IconArrowRight size={16} />
         </Button>
         <Button
           variant="ghost"
@@ -80,7 +80,7 @@ export function OtpStep({ onNext, signerData }) {
           className="w-full text-muted-foreground"
           onClick={handleResend}
         >
-          <RefreshCw size={13} />
+          <IconRefresh size={13} />
           {resent ? 'Código reenviado' : 'Reenviar código'}
         </Button>
       </div>

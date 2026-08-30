@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { ArrowRight, User } from 'lucide-react'
+import { IconArrowRight, IconUser } from '@tabler/icons-react'
 
 function formatCPF(value) {
   const digits = value.replace(/\D/g, '').slice(0, 11)
@@ -55,7 +55,7 @@ export function UserDataStep({ onNext }) {
     <>
       <div className="p-6">
         <div className="flex items-center gap-2 mb-1">
-          <User size={16} className="text-primary" />
+          <IconUser size={16} className="text-primary" />
           <h2 className="text-lg font-bold text-foreground">Seus dados</h2>
         </div>
         <p className="text-sm text-muted-foreground mb-5">
@@ -111,7 +111,7 @@ export function UserDataStep({ onNext }) {
       <div className="px-6 py-4 border-t border-border">
         <Button className="w-full" size="lg" onClick={handleSubmit}>
           Continuar
-          <ArrowRight size={16} />
+          <IconArrowRight size={16} />
         </Button>
       </div>
     </>

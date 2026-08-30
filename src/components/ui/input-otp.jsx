@@ -1,6 +1,6 @@
 import * as React from 'react'
 import { OTPInput, OTPInputContext } from 'input-otp'
-import { Dot } from 'lucide-react'
+import { IconPoint } from '@tabler/icons-react'
 import { cn } from '@/lib/utils'
 
 const InputOTP = React.forwardRef(({ className, containerClassName, ...props }, ref) => (
@@ -44,7 +44,7 @@ InputOTPSlot.displayName = 'InputOTPSlot'
 
 const InputOTPSeparator = React.forwardRef(({ ...props }, ref) => (
   <div ref={ref} role="separator" {...props}>
-    <Dot />
+    <IconPoint size={16} />
   </div>
 ))
 InputOTPSeparator.displayName = 'InputOTPSeparator'

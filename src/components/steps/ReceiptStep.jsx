@@ -2,7 +2,7 @@ import { ScrollArea } from '@/components/ui/scroll-area'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
 import { Badge } from '@/components/ui/badge'
-import { CheckCircle, Download, User, Globe, MapPin, Monitor, Fingerprint, Battery, FileText } from 'lucide-react'
+import { IconCircleCheck, IconDownload, IconUser, IconWorld, IconMapPin, IconDeviceDesktop, IconFingerprint, IconBattery, IconFileText } from '@tabler/icons-react'
 
 function DataRow({ label, value }) {
   if (value === null || value === undefined || value === '') return null
@@ -61,7 +61,7 @@ export function ReceiptStep({ data }) {
             </div>
           )}
           <div className="flex items-center gap-2 mb-1">
-            <CheckCircle size={20} className="text-success" />
+            <IconCircleCheck size={20} className="text-success" />
             <h2 className="text-lg font-bold text-foreground">Assinatura concluída!</h2>
           </div>
           <p className="text-sm text-muted-foreground text-center">
@@ -73,13 +73,13 @@ export function ReceiptStep({ data }) {
         </div>
 
         <ScrollArea className="h-[380px] pr-1">
-          <Section icon={User} title="Assinante">
+          <Section icon={IconUser} title="Assinante">
             <DataRow label="Nome" value={data.signerName} />
             <DataRow label="CPF" value={data.signerCpf} />
             <DataRow label="E-mail" value={data.signerEmail} />
           </Section>
 
-          <Section icon={FileText} title="Documento">
+          <Section icon={IconFileText} title="Documento">
             <DataRow label="Data/hora UTC" value={data.timestamp} />
             <DataRow label="Selfie capturada" value={data.selfieTimestamp} />
             <div className="flex gap-3 py-2">
@@ -88,13 +88,13 @@ export function ReceiptStep({ data }) {
             </div>
           </Section>
 
-          <Section icon={MapPin} title="Localização GPS">
+          <Section icon={IconMapPin} title="Localização GPS">
             <DataRow label="GPS lat/lng" value={data.gpsLatitude && `${data.gpsLatitude?.toFixed(6)}, ${data.gpsLongitude?.toFixed(6)}`} />
             <DataRow label="Precisão" value={data.gpsAccuracy && `±${data.gpsAccuracy}m`} />
             <DataRow label="Geoloc. negada" value={data.geoDenied} />
           </Section>
 
-          <Section icon={Globe} title="Rede / IP">
+          <Section icon={IconWorld} title="Rede / IP">
             <DataRow label="IP" value={data.ip} />
             <DataRow label="Cidade" value={data.city} />
             <DataRow label="Estado" value={data.region} />
@@ -104,7 +104,7 @@ export function ReceiptStep({ data }) {
             <DataRow label="Fuso (IP)" value={data.timezone} />
           </Section>
 
-          <Section icon={Monitor} title="Dispositivo e tela">
+          <Section icon={IconDeviceDesktop} title="Dispositivo e tela">
             <DataRow label="Plataforma" value={data.platform} />
             <DataRow label="Idioma" value={data.language} />
             <DataRow label="RAM" value={data.deviceMemory && `${data.deviceMemory} GB`} />
@@ -116,7 +116,7 @@ export function ReceiptStep({ data }) {
             <DataRow label="Offset fuso" value={data.timezoneOffset !== undefined && `UTC${data.timezoneOffset > 0 ? `-${data.timezoneOffset / 60}` : `+${Math.abs(data.timezoneOffset) / 60}`}`} />
           </Section>
 
-          <Section icon={Fingerprint} title="Fingerprint">
+          <Section icon={IconFingerprint} title="Fingerprint">
             <DataRow label="Visitor ID" value={data.visitorId} />
             <DataRow label="Canvas hash" value={data.canvasHash?.slice(0, 32) + '...'} />
             <DataRow label="WebGL vendor" value={data.webglVendor} />
@@ -125,13 +125,13 @@ export function ReceiptStep({ data }) {
           </Section>
 
           {data.battery && (
-            <Section icon={Battery} title="Bateria">
+            <Section icon={IconBattery} title="Bateria">
               <DataRow label="Nível" value={`${data.battery.level}%`} />
               <DataRow label="Carregando" value={data.battery.charging} />
             </Section>
           )}
 
-          <Section icon={Monitor} title="User Agent">
+          <Section icon={IconDeviceDesktop} title="User Agent">
             <div className="py-2">
               <p className="text-[11px] font-mono text-muted-foreground break-all">{data.userAgent}</p>
             </div>
@@ -145,7 +145,7 @@ export function ReceiptStep({ data }) {
           size="lg"
           onClick={() => downloadJson({ ...data, selfieBase64: selfieBase64 ? '[base64 presente no arquivo JSON]' : null, selfieBase64Full: selfieBase64 })}
         >
-          <Download size={16} />
+          <IconDownload size={16} />
           Baixar comprovante JSON
         </Button>
         <p className="text-[11px] text-muted-foreground text-center">

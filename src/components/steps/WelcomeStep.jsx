@@ -1,6 +1,6 @@
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Button } from '@/components/ui/button'
-import { Info, ArrowRight, FileText } from 'lucide-react'
+import { IconInfoCircle, IconArrowRight, IconFileText } from '@tabler/icons-react'
 
 const DOCUMENT_TEXT = `CONTRATO DE PRESTAÇÃO DE SERVIÇOS DIGITAIS
 
@@ -33,7 +33,7 @@ export function WelcomeStep({ onNext }) {
     <>
       <div className="p-6">
         <div className="flex items-center gap-2 mb-1">
-          <FileText size={16} className="text-primary" />
+          <IconFileText size={16} className="text-primary" />
           <h2 className="text-lg font-bold text-foreground">Documento para assinatura</h2>
         </div>
         <p className="text-sm text-muted-foreground mb-4">
@@ -56,7 +56,7 @@ export function WelcomeStep({ onNext }) {
         </div>
 
         <div className="flex items-center gap-2 rounded-md border border-border bg-muted/40 px-3 py-2 text-[12px] text-muted-foreground">
-          <Info size={12} className="flex-shrink-0 text-foreground/50" />
+          <IconInfoCircle size={12} className="flex-shrink-0 text-foreground/50" />
           <span><span className="font-medium text-foreground/70">Validade jurídica:</span> serão coletados IP, localização e selfie.</span>
         </div>
       </div>
@@ -64,7 +64,7 @@ export function WelcomeStep({ onNext }) {
       <div className="px-6 py-4 border-t border-border">
         <Button className="w-full" size="lg" onClick={onNext}>
           Li e quero assinar
-          <ArrowRight size={16} />
+          <IconArrowRight size={16} />
         </Button>
       </div>
     </>

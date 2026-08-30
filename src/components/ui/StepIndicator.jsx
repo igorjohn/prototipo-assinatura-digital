@@ -1,13 +1,13 @@
-import { FileText, User, Mail, MapPin, Camera, CheckCircle, Check } from 'lucide-react'
+import { IconFileText, IconUser, IconMail, IconMapPin, IconCamera, IconCircleCheck, IconCheck } from '@tabler/icons-react'
 import { cn } from '@/lib/utils'
 
 const STEP_CONFIG = [
-  { key: 'welcome',  Icon: FileText },
-  { key: 'userData', Icon: User },
-  { key: 'otp',      Icon: Mail },
-  { key: 'geo',      Icon: MapPin },
-  { key: 'selfie',   Icon: Camera },
-  { key: 'receipt',  Icon: CheckCircle },
+  { key: 'welcome',  Icon: IconFileText },
+  { key: 'userData', Icon: IconUser },
+  { key: 'otp',      Icon: IconMail },
+  { key: 'geo',      Icon: IconMapPin },
+  { key: 'selfie',   Icon: IconCamera },
+  { key: 'receipt',  Icon: IconCircleCheck },
 ]
 
 const N = STEP_CONFIG.length
@@ -47,8 +47,8 @@ export function StepIndicator({ currentStep }) {
               )}
             >
               {idx < currentIdx
-                ? <Check size={14} strokeWidth={2.5} />
-                : <step.Icon size={14} strokeWidth={idx === currentIdx ? 2.5 : 2} />
+                ? <IconCheck size={14} stroke={2.5} />
+                : <step.Icon size={14} stroke={idx === currentIdx ? 2.5 : 2} />
               }
             </div>
           </div>

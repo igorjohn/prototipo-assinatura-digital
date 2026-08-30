@@ -1,12 +1,29 @@
 import { useRef, useEffect, useState, useCallback } from 'react'
 import { loadFaceDetectionModels, detectFace, detectFaceWithLandmarks, getFaceStatus, getEAR } from '@/lib/faceDetection'
-import { Loader2 } from 'lucide-react'
+import { IconLoader2 } from '@tabler/icons-react'
 
 const OVAL_RATIO = 0.72
 const OVAL_ASPECT = 1.32
 const ALIGNED_HOLD_MS = 1200
 const EAR_CLOSED = 0.22
 const EAR_OPEN = 0.28
+const BRIGHTNESS_DARK = 28
+const BRIGHTNESS_DIM = 50
+const BRIGHTNESS_SAMPLE_EVERY = 20 // frames
+
+function sampleBrightness(video) {
+  try {
+    const offscreen = document.createElement('canvas')
+    offscreen.width = 64; offscreen.height = 64
+    offscreen.getContext('2d').drawImage(video, 0, 0, 64, 64)
+    const { data } = offscreen.getContext('2d').getImageData(0, 0, 64, 64)
+    let sum = 0
+    for (let i = 0; i < data.length; i += 4) {
+      sum += 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2]
+    }
+    return sum / (data.length / 4)
+  } catch { return 255 }
+}
 
 function drawOverlay(ctx, w, h, color) {
   ctx.clearRect(0, 0, w, h)
@@ -75,6 +92,8 @@ export function OvalCamera({ onCapture }) {
   const challengeRef = useRef(null)      // { count: 1|2 }
   const overlayColorRef = useRef('#6b7280')
   const overlayMsgRef = useRef('')
+  const frameCountRef = useRef(0)
+  const brightnessRef = useRef(255)
 
   const [status, setStatus] = useState('loading_models')
   const [modelsReady, setModelsReady] = useState(false)
@@ -83,6 +102,7 @@ export function OvalCamera({ onCapture }) {
   const [challenge, setChallenge] = useState(null)
   const [blinksCount, setBlinksCount] = useState(0)
   const [bottomMsg, setBottomMsg] = useState('')
+  const [brightnessLevel, setBrightnessLevel] = useState('ok') // 'ok' | 'dim' | 'dark'
 
   useEffect(() => {
     loadFaceDetectionModels()
@@ -141,6 +161,15 @@ export function OvalCamera({ onCapture }) {
       if (!isDetectingRef.current) {
         isDetectingRef.current = true
         const ovalBounds = { cx: w/2, cy: h/2, rx: (w*OVAL_RATIO)/2, ry: (w*OVAL_RATIO*OVAL_ASPECT)/2 }
+
+        // Sample brightness every N frames
+        frameCountRef.current++
+        if (frameCountRef.current % BRIGHTNESS_SAMPLE_EVERY === 0 && phaseRef.current === 'positioning') {
+          const lum = sampleBrightness(video)
+          brightnessRef.current = lum
+          const lvl = lum < BRIGHTNESS_DARK ? 'dark' : lum < BRIGHTNESS_DIM ? 'dim' : 'ok'
+          setBrightnessLevel(lvl)
+        }
 
         if (phaseRef.current === 'positioning') {
           detectFace(video).then(detection => {
@@ -234,8 +263,16 @@ export function OvalCamera({ onCapture }) {
 
         {isLoading && (
           <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/70 gap-3 text-white text-sm">
-            <Loader2 size={24} className="animate-spin" />
+            <IconLoader2 size={24} className="animate-spin" />
             <span>Iniciando câmera e modelos de IA...</span>
+          </div>
+        )}
+
+        {phase === 'positioning' && brightnessLevel !== 'ok' && (
+          <div className="absolute top-3 left-0 right-0 flex justify-center pointer-events-none z-10">
+            <div className="bg-amber-500/90 text-white text-xs font-semibold px-3 py-1.5 rounded-full">
+              {brightnessLevel === 'dark' ? '⚠ Ambiente muito escuro — acenda uma luz' : '⚠ Pouca iluminação'}
+            </div>
           </div>
         )}
 

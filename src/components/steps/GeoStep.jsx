@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
-import { Globe, MapPin, Smartphone, Check, Loader2, ArrowRight, AlertTriangle } from 'lucide-react'
+import { IconWorld, IconMapPin, IconDeviceMobile, IconCheck, IconLoader2, IconArrowRight, IconAlertTriangle } from '@tabler/icons-react'
 import { collectBrowserData } from '@/lib/dataCollection'
 import { collectFingerprint } from '@/lib/fingerprint'
 import { CONTRACT_TEXT } from './WelcomeStep'
@@ -48,14 +48,14 @@ function PermissionCard({ icon: Icon, label, status, value, onRequest, loading, 
         )}
         {status === 'requesting' && (
           <div className="flex items-center gap-1.5 mt-1">
-            <Loader2 size={12} className="animate-spin text-muted-foreground" />
+            <IconLoader2 size={12} className="animate-spin text-muted-foreground" />
             <span className="text-xs text-muted-foreground">Aguardando...</span>
           </div>
         )}
       </div>
       {status === 'success' && (
         <div className="flex items-center justify-center w-6 h-6 rounded-full bg-success/10 flex-shrink-0">
-          <Check size={12} className="text-success" strokeWidth={2.5} />
+          <IconCheck size={12} className="text-success" stroke={2.5} />
         </div>
       )}
     </div>
@@ -118,7 +118,7 @@ export function GeoStep({ onNext }) {
     <>
       <div className="p-6">
         <div className="flex items-center gap-2 mb-1">
-          <MapPin size={16} className="text-primary" />
+          <IconMapPin size={16} className="text-primary" />
           <h2 className="text-lg font-bold text-foreground">Permissões necessárias</h2>
         </div>
         <p className="text-sm text-muted-foreground mb-5">
@@ -129,13 +129,13 @@ export function GeoStep({ onNext }) {
           {/* IP card */}
           {loading ? (
             <div className="flex items-center gap-2 text-sm text-muted-foreground py-2">
-              <Loader2 size={14} className="animate-spin" />
+              <IconLoader2 size={14} className="animate-spin" />
               Coletando dados do dispositivo...
             </div>
           ) : browserData?.ip && (
             <div className="flex items-start gap-3 rounded-lg border border-border bg-muted/30 p-4">
               <div className="flex items-center justify-center w-9 h-9 rounded-full bg-background border border-border flex-shrink-0 mt-0.5">
-                <Globe size={16} className="text-muted-foreground" />
+                <IconWorld size={16} className="text-muted-foreground" />
               </div>
               <div>
                 <p className="text-[13px] font-semibold text-foreground mb-0.5">IP detectado</p>
@@ -145,13 +145,13 @@ export function GeoStep({ onNext }) {
                 )}
               </div>
               <div className="flex items-center justify-center w-6 h-6 rounded-full bg-success/10 flex-shrink-0">
-                <Check size={12} className="text-success" strokeWidth={2.5} />
+                <IconCheck size={12} className="text-success" stroke={2.5} />
               </div>
             </div>
           )}
 
           <PermissionCard
-            icon={MapPin}
+            icon={IconMapPin}
             label="Localização GPS"
             status={geoStatus}
             value={
@@ -167,7 +167,7 @@ export function GeoStep({ onNext }) {
 
           {isIOS && (
             <PermissionCard
-              icon={Smartphone}
+              icon={IconDeviceMobile}
               label="Sensor de movimento"
               status={motionStatus}
               value={
@@ -185,7 +185,7 @@ export function GeoStep({ onNext }) {
 
           {!isIOS && !loading && (
             <div className="flex items-start gap-2 rounded-lg border border-border bg-muted/20 p-3 text-xs text-muted-foreground">
-              <Smartphone size={13} className="flex-shrink-0 mt-0.5" />
+              <IconDeviceMobile size={13} className="flex-shrink-0 mt-0.5" />
               <span>Sensor de movimento coletado automaticamente em Android e desktop.</span>
             </div>
           )}
@@ -200,9 +200,9 @@ export function GeoStep({ onNext }) {
           disabled={!canContinue}
         >
           {canContinue ? (
-            <><span>Continuar</span><ArrowRight size={16} /></>
+            <><span>Continuar</span><IconArrowRight size={16} /></>
           ) : (
-            <><Loader2 size={16} className="animate-spin" /><span>Aguardando permissões...</span></>
+            <><IconLoader2 size={16} className="animate-spin" /><span>Aguardando permissões...</span></>
           )}
         </Button>
       </div>
