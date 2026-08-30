@@ -1,12 +1,37 @@
 import { useRef, useEffect, useState, useCallback } from 'react'
-import { loadFaceDetectionModels, detectFace, getFaceStatus } from '@/lib/faceDetection'
-import { cn } from '@/lib/utils'
+import { loadFaceDetectionModels, detectFace, detectFaceWithLandmarks, getFaceStatus, getEAR } from '@/lib/faceDetection'
 import { Loader2 } from 'lucide-react'
 
 const OVAL_RATIO = 0.72
 const OVAL_ASPECT = 1.32
+const ALIGNED_HOLD_MS = 1200
+const EAR_CLOSED = 0.22
+const EAR_OPEN = 0.28
 
-const STATUS_COLORS = {
+function drawOverlay(ctx, w, h, color) {
+  ctx.clearRect(0, 0, w, h)
+  const cx = w / 2, cy = h / 2
+  const rx = (w * OVAL_RATIO) / 2, ry = rx * OVAL_ASPECT
+  ctx.fillStyle = 'rgba(0,0,0,0.55)'
+  ctx.fillRect(0, 0, w, h)
+  ctx.globalCompositeOperation = 'destination-out'
+  ctx.beginPath()
+  ctx.ellipse(cx, cy, rx, ry, 0, 0, Math.PI * 2)
+  ctx.fillStyle = 'rgba(255,255,255,1)'
+  ctx.fill()
+  ctx.globalCompositeOperation = 'source-over'
+  ctx.strokeStyle = color
+  ctx.lineWidth = 3.5
+  ctx.shadowColor = color
+  ctx.shadowBlur = 10
+  ctx.beginPath()
+  ctx.ellipse(cx, cy, rx, ry, 0, 0, Math.PI * 2)
+  ctx.stroke()
+  ctx.shadowBlur = 0
+  return { cx, cy, rx, ry }
+}
+
+const STATUS_COLOR = {
   loading_models: '#6b7280',
   camera_error:   '#e02424',
   no_face:        '#e02424',
@@ -21,43 +46,19 @@ const STATUS_COLORS = {
   aligned:        '#0e9f6e',
 }
 
-const STATUS_MESSAGES = {
+const STATUS_MSG = {
   loading_models: 'Carregando detecção de rosto...',
-  camera_error:   'Erro ao acessar a câmera. Verifique as permissões.',
+  camera_error:   'Erro ao acessar a câmera',
   no_face:        'Posicione seu rosto dentro da moldura',
-  too_close:      'Afaste-se um pouco da câmera',
-  too_far:        'Aproxime-se um pouco mais da câmera',
-  move_up:        'Suba o rosto um pouco',
-  move_down:      'Desça o rosto um pouco',
-  move_left:      'Mova o rosto para a direita',
-  move_right:     'Mova o rosto para a esquerda',
-  not_centered:   'Centralize seu rosto na moldura',
-  misaligned:     'Centralize seu rosto na moldura',
-  aligned:        'Perfeito! Segure assim...',
-}
-
-function drawOverlay(ctx, w, h, status) {
-  ctx.clearRect(0, 0, w, h)
-  const cx = w / 2, cy = h / 2
-  const rx = (w * OVAL_RATIO) / 2, ry = rx * OVAL_ASPECT
-  ctx.fillStyle = 'rgba(0, 0, 0, 0.55)'
-  ctx.fillRect(0, 0, w, h)
-  ctx.globalCompositeOperation = 'destination-out'
-  ctx.beginPath()
-  ctx.ellipse(cx, cy, rx, ry, 0, 0, Math.PI * 2)
-  ctx.fillStyle = 'rgba(255,255,255,1)'
-  ctx.fill()
-  ctx.globalCompositeOperation = 'source-over'
-  const color = STATUS_COLORS[status] || '#6b7280'
-  ctx.strokeStyle = color
-  ctx.lineWidth = 3.5
-  ctx.shadowColor = color
-  ctx.shadowBlur = 10
-  ctx.beginPath()
-  ctx.ellipse(cx, cy, rx, ry, 0, 0, Math.PI * 2)
-  ctx.stroke()
-  ctx.shadowBlur = 0
-  return { cx, cy, rx, ry }
+  too_close:      'Afaste-se um pouco',
+  too_far:        'Aproxime-se um pouco mais',
+  move_up:        'Suba o rosto',
+  move_down:      'Desça o rosto',
+  move_left:      'Mova para a direita',
+  move_right:     'Mova para a esquerda',
+  not_centered:   'Centralize seu rosto',
+  misaligned:     'Centralize seu rosto',
+  aligned:        'Posição perfeita — aguarde...',
 }
 
 export function OvalCamera({ onCapture }) {
@@ -65,23 +66,37 @@ export function OvalCamera({ onCapture }) {
   const canvasRef = useRef(null)
   const animFrameRef = useRef(null)
   const isDetectingRef = useRef(false)
-  const countdownTimerRef = useRef(null)
-  const countdownValueRef = useRef(null)
+  const alignedSinceRef = useRef(null)
+
+  // Challenge refs (updated synchronously inside loop)
+  const phaseRef = useRef('positioning') // 'positioning' | 'challenge' | 'done'
+  const blinkStateRef = useRef('open')   // 'open' | 'closing'
+  const blinkCountRef = useRef(0)
+  const challengeRef = useRef(null)      // { count: 1|2 }
+  const overlayColorRef = useRef('#6b7280')
+  const overlayMsgRef = useRef('')
 
   const [status, setStatus] = useState('loading_models')
-  const [countdown, setCountdown] = useState(null)
   const [modelsReady, setModelsReady] = useState(false)
   const [cameraReady, setCameraReady] = useState(false)
+  const [phase, setPhase] = useState('positioning')
+  const [challenge, setChallenge] = useState(null)
+  const [blinksCount, setBlinksCount] = useState(0)
+  const [bottomMsg, setBottomMsg] = useState('')
 
   useEffect(() => {
-    loadFaceDetectionModels().then(() => setModelsReady(true)).catch(() => setStatus('camera_error'))
+    loadFaceDetectionModels()
+      .then(() => setModelsReady(true))
+      .catch(() => setStatus('camera_error'))
   }, [])
 
   useEffect(() => {
     let stream = null
     async function startCamera() {
       try {
-        stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 640 } } })
+        stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 640 } },
+        })
         if (videoRef.current) {
           videoRef.current.srcObject = stream
           await videoRef.current.play()
@@ -93,55 +108,6 @@ export function OvalCamera({ onCapture }) {
     return () => { if (stream) stream.getTracks().forEach(t => t.stop()) }
   }, [])
 
-  useEffect(() => {
-    if (!modelsReady || !cameraReady) return
-    setStatus('no_face')
-    async function loop() {
-      const video = videoRef.current, canvas = canvasRef.current
-      if (!video || !canvas || video.paused || video.ended) { animFrameRef.current = requestAnimationFrame(loop); return }
-      const { videoWidth: w, videoHeight: h } = video
-      if (!w || !h) { animFrameRef.current = requestAnimationFrame(loop); return }
-      canvas.width = w; canvas.height = h
-      const ctx = canvas.getContext('2d')
-      if (!isDetectingRef.current) {
-        isDetectingRef.current = true
-        detectFace(video).then(detection => {
-          isDetectingRef.current = false
-          const ovalBounds = { cx: w / 2, cy: h / 2, rx: (w * OVAL_RATIO) / 2, ry: (w * OVAL_RATIO * OVAL_ASPECT) / 2 }
-          setStatus(getFaceStatus(detection, ovalBounds))
-        })
-      }
-      drawOverlay(ctx, w, h, status)
-      animFrameRef.current = requestAnimationFrame(loop)
-    }
-    loop()
-    return () => { if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current) }
-  }, [modelsReady, cameraReady])
-
-  useEffect(() => {
-    if (status === 'aligned') {
-      if (!countdownTimerRef.current) {
-        countdownValueRef.current = 3
-        setCountdown(3)
-        countdownTimerRef.current = setInterval(() => {
-          countdownValueRef.current -= 1
-          setCountdown(countdownValueRef.current)
-          if (countdownValueRef.current <= 0) {
-            clearInterval(countdownTimerRef.current)
-            countdownTimerRef.current = null
-            capturePhoto()
-          }
-        }, 1000)
-      }
-    } else {
-      if (countdownTimerRef.current) {
-        clearInterval(countdownTimerRef.current)
-        countdownTimerRef.current = null
-        setCountdown(null)
-      }
-    }
-  }, [status])
-
   const capturePhoto = useCallback(() => {
     const video = videoRef.current
     if (!video) return
@@ -151,34 +117,154 @@ export function OvalCamera({ onCapture }) {
     onCapture(cap.toDataURL('image/jpeg', 0.85))
   }, [onCapture])
 
+  useEffect(() => {
+    if (!modelsReady || !cameraReady) return
+    setStatus('no_face')
+    overlayColorRef.current = STATUS_COLOR.no_face
+    overlayMsgRef.current = STATUS_MSG.no_face
+    setBottomMsg(STATUS_MSG.no_face)
+
+    async function loop() {
+      if (phaseRef.current === 'done') return
+
+      const video = videoRef.current, canvas = canvasRef.current
+      if (!video || !canvas || video.paused || video.ended) {
+        animFrameRef.current = requestAnimationFrame(loop)
+        return
+      }
+      const { videoWidth: w, videoHeight: h } = video
+      if (!w || !h) { animFrameRef.current = requestAnimationFrame(loop); return }
+
+      canvas.width = w; canvas.height = h
+      drawOverlay(canvas.getContext('2d'), w, h, overlayColorRef.current)
+
+      if (!isDetectingRef.current) {
+        isDetectingRef.current = true
+        const ovalBounds = { cx: w/2, cy: h/2, rx: (w*OVAL_RATIO)/2, ry: (w*OVAL_RATIO*OVAL_ASPECT)/2 }
+
+        if (phaseRef.current === 'positioning') {
+          detectFace(video).then(detection => {
+            isDetectingRef.current = false
+            const fs = getFaceStatus(detection, ovalBounds)
+            setStatus(fs)
+            overlayColorRef.current = STATUS_COLOR[fs] ?? '#6b7280'
+            const msg = STATUS_MSG[fs] ?? ''
+            overlayMsgRef.current = msg
+            setBottomMsg(msg)
+
+            if (fs === 'aligned') {
+              if (!alignedSinceRef.current) alignedSinceRef.current = Date.now()
+              if (Date.now() - alignedSinceRef.current >= ALIGNED_HOLD_MS) {
+                const count = Math.random() < 0.5 ? 1 : 2
+                const ch = { count }
+                challengeRef.current = ch
+                blinkCountRef.current = 0
+                blinkStateRef.current = 'open'
+                phaseRef.current = 'challenge'
+                overlayColorRef.current = '#0e9f6e'
+                const challengeLabel = count === 1 ? 'Pisque 1 vez' : 'Pisque 2 vezes'
+                overlayMsgRef.current = challengeLabel
+                setBottomMsg(challengeLabel)
+                setChallenge(ch)
+                setPhase('challenge')
+                setBlinksCount(0)
+                alignedSinceRef.current = null
+              }
+            } else {
+              alignedSinceRef.current = null
+            }
+          })
+        } else if (phaseRef.current === 'challenge') {
+          detectFaceWithLandmarks(video).then(result => {
+            isDetectingRef.current = false
+            const ch = challengeRef.current
+
+            if (!result?.landmarks) {
+              const msg = 'Reposicione seu rosto na moldura'
+              overlayColorRef.current = '#d97706'
+              overlayMsgRef.current = msg
+              setBottomMsg(msg)
+              return
+            }
+
+            overlayColorRef.current = '#0e9f6e'
+            const ear = getEAR(result.landmarks)
+
+            if (blinkStateRef.current === 'open' && ear < EAR_CLOSED) {
+              blinkStateRef.current = 'closing'
+            } else if (blinkStateRef.current === 'closing' && ear > EAR_OPEN) {
+              blinkStateRef.current = 'open'
+              blinkCountRef.current += 1
+              const n = blinkCountRef.current
+              setBlinksCount(n)
+
+              if (n >= ch.count) {
+                phaseRef.current = 'done'
+                const msg = 'Verificado! Capturando...'
+                overlayMsgRef.current = msg
+                setBottomMsg(msg)
+                setPhase('done')
+                setTimeout(() => capturePhoto(), 600)
+                return
+              }
+            }
+
+            const label = ch.count === 1
+              ? 'Pisque 1 vez'
+              : `Pisque 2 vezes (${blinkCountRef.current}/2)`
+            overlayMsgRef.current = label
+            setBottomMsg(label)
+          })
+        }
+      }
+
+      animFrameRef.current = requestAnimationFrame(loop)
+    }
+    loop()
+    return () => { if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current) }
+  }, [modelsReady, cameraReady, capturePhoto])
+
+  const isLoading = status === 'loading_models' || !modelsReady || !cameraReady
+
   return (
     <div className="space-y-3">
       <div className="camera-container">
         <video ref={videoRef} className="camera-video" muted playsInline />
         <canvas ref={canvasRef} className="camera-canvas" />
 
-        {(status === 'loading_models' || (!modelsReady && !cameraReady)) && (
+        {isLoading && (
           <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/70 gap-3 text-white text-sm">
             <Loader2 size={24} className="animate-spin" />
             <span>Iniciando câmera e modelos de IA...</span>
           </div>
         )}
 
-        {countdown !== null && countdown > 0 && (
-          <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
-            <span className="text-white text-7xl font-extrabold drop-shadow-2xl">{countdown}</span>
+        {phase === 'challenge' && (
+          <div className="absolute top-3 left-0 right-0 flex justify-center pointer-events-none z-10">
+            <div className="bg-black/70 text-white text-xs font-semibold px-3 py-1.5 rounded-full flex items-center gap-2">
+              <span className="inline-block w-2 h-2 rounded-full bg-green-400 animate-pulse" />
+              Desafio de segurança
+            </div>
           </div>
         )}
 
         <div className="absolute bottom-0 left-0 right-0 px-4 py-3 bg-black/65 text-white text-[13px] font-medium text-center">
-          {STATUS_MESSAGES[status] || ''}
+          {bottomMsg}
         </div>
       </div>
 
-      <div className="flex items-start gap-2 rounded-lg border border-border bg-muted/30 p-3 text-[12px] text-muted-foreground">
-        <span className="mt-0.5 text-primary text-[14px]">●</span>
-        <span>Posicione seu rosto centralizado na moldura. A captura é automática quando a moldura ficar verde.</span>
-      </div>
+      {phase === 'positioning' && (
+        <p className="text-[12px] text-muted-foreground text-center px-2">
+          Centralize o rosto na moldura. Um desafio de segurança aparecerá em seguida.
+        </p>
+      )}
+      {phase === 'challenge' && (
+        <p className="text-[12px] text-center px-2 font-medium" style={{ color: '#0e9f6e' }}>
+          {challenge?.count === 1
+            ? `Piscada detectada: ${blinksCount}/1`
+            : `Piscadas detectadas: ${blinksCount}/2`}
+        </p>
+      )}
     </div>
   )
 }
