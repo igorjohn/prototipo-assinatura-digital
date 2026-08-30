@@ -1,11 +1,13 @@
-import { IconFileText, IconUser, IconMail, IconMapPin, IconCamera, IconCircleCheck, IconCheck } from '@tabler/icons-react'
+import { IconFileText, IconUser, IconMail, IconMapPin, IconCamera, IconCircleCheck, IconCheck, IconId, IconFingerprint } from '@tabler/icons-react'
 import { cn } from '@/lib/utils'
 
 const STEP_CONFIG = [
   { key: 'welcome',  Icon: IconFileText },
   { key: 'userData', Icon: IconUser },
   { key: 'otp',      Icon: IconMail },
+  { key: 'document', Icon: IconId },
   { key: 'geo',      Icon: IconMapPin },
+  { key: 'webauthn', Icon: IconFingerprint },
   { key: 'selfie',   Icon: IconCamera },
   { key: 'receipt',  Icon: IconCircleCheck },
 ]

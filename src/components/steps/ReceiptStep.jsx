@@ -2,7 +2,7 @@ import { ScrollArea } from '@/components/ui/scroll-area'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
 import { Badge } from '@/components/ui/badge'
-import { IconCircleCheck, IconDownload, IconUser, IconWorld, IconMapPin, IconDeviceDesktop, IconFingerprint, IconBattery, IconFileText } from '@tabler/icons-react'
+import { IconCircleCheck, IconDownload, IconUser, IconWorld, IconMapPin, IconDeviceDesktop, IconFingerprint, IconBattery, IconFileText, IconId, IconShieldCheck } from '@tabler/icons-react'
 
 function DataRow({ label, value }) {
   if (value === null || value === undefined || value === '') return null
@@ -43,7 +43,7 @@ function downloadJson(data) {
 }
 
 export function ReceiptStep({ data }) {
-  const { selfieBase64, selfieAlignedBase64, ...rest } = data
+  const { selfieBase64, selfieAlignedBase64, documentPdfBase64, documentFrontBase64, documentBackBase64, ...rest } = data
 
   return (
     <>
@@ -88,6 +88,43 @@ export function ReceiptStep({ data }) {
               <span className="text-[10px] font-mono text-muted-foreground break-all bg-muted/50 px-2 py-1 rounded">{data.documentHash}</span>
             </div>
           </Section>
+
+          {(data.documentMode || data.documentSkipped) && (
+            <Section icon={IconId} title="Documento de identidade">
+              <DataRow label="Modo" value={data.documentSkipped ? 'Pulado' : data.documentMode === 'pdf' ? 'CNH Digital (PDF)' : 'Fotos (frente e verso)'} />
+              {data.documentMode === 'pdf' && (
+                <>
+                  <DataRow label="Arquivo" value={data.documentPdfName} />
+                  <DataRow label="Tamanho" value={data.documentPdfSizeKb && `${data.documentPdfSizeKb} KB`} />
+                </>
+              )}
+              {data.documentMode === 'photos' && (
+                <>
+                  <DataRow label="Frente" value={documentFrontBase64 ? 'Capturada' : 'Não enviada'} />
+                  <DataRow label="Verso" value={documentBackBase64 ? 'Capturado' : 'Não enviado'} />
+                </>
+              )}
+            </Section>
+          )}
+
+          {data.webAuthnCompleted != null && (
+            <Section icon={IconShieldCheck} title="Assinatura biométrica (WebAuthn)">
+              <DataRow label="Concluída" value={data.webAuthnCompleted} />
+              {data.webAuthnCompleted && (
+                <>
+                  <DataRow label="Timestamp" value={data.webAuthnTimestamp} />
+                  <div className="flex gap-3 py-2 border-b border-border/50">
+                    <span className="text-[12px] text-muted-foreground min-w-[120px] flex-shrink-0">Credential ID</span>
+                    <span className="text-[10px] font-mono text-muted-foreground break-all bg-muted/50 px-2 py-1 rounded">{data.webAuthnCredentialId}</span>
+                  </div>
+                  <div className="flex gap-3 py-2">
+                    <span className="text-[12px] text-muted-foreground min-w-[120px] flex-shrink-0">Assinatura</span>
+                    <span className="text-[10px] font-mono text-muted-foreground break-all bg-muted/50 px-2 py-1 rounded">{data.webAuthnSignature?.slice(0, 48)}…</span>
+                  </div>
+                </>
+              )}
+            </Section>
+          )}
 
           <Section icon={IconMapPin} title="Localização GPS">
             <DataRow label="GPS lat/lng" value={data.gpsLatitude && `${data.gpsLatitude?.toFixed(6)}, ${data.gpsLongitude?.toFixed(6)}`} />
@@ -150,6 +187,12 @@ export function ReceiptStep({ data }) {
             selfieBase64Full: selfieBase64,
             selfieAlignedBase64: selfieAlignedBase64 ? '[base64 — ver selfieAlignedBase64Full]' : null,
             selfieAlignedBase64Full: selfieAlignedBase64,
+            documentPdfBase64: documentPdfBase64 ? '[base64 — ver documentPdfBase64Full]' : null,
+            documentPdfBase64Full: documentPdfBase64,
+            documentFrontBase64: documentFrontBase64 ? '[base64 — ver documentFrontBase64Full]' : null,
+            documentFrontBase64Full: documentFrontBase64,
+            documentBackBase64: documentBackBase64 ? '[base64 — ver documentBackBase64Full]' : null,
+            documentBackBase64Full: documentBackBase64,
           })}
         >
           <IconDownload size={16} />

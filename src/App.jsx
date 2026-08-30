@@ -3,7 +3,9 @@ import { StepIndicator } from './components/ui/StepIndicator'
 import { WelcomeStep } from './components/steps/WelcomeStep'
 import { UserDataStep } from './components/steps/UserDataStep'
 import { OtpStep } from './components/steps/OtpStep'
+import { DocumentStep } from './components/steps/DocumentStep'
 import { GeoStep } from './components/steps/GeoStep'
+import { WebAuthnStep } from './components/steps/WebAuthnStep'
 import { SelfieStep } from './components/steps/SelfieStep'
 import { ReceiptStep } from './components/steps/ReceiptStep'
 
@@ -15,7 +17,7 @@ function SignatureIcon() {
   )
 }
 
-const STEPS = ['welcome', 'userData', 'otp', 'geo', 'selfie', 'receipt']
+const STEPS = ['welcome', 'userData', 'otp', 'document', 'geo', 'webauthn', 'selfie', 'receipt']
 
 export default function App() {
   const [step, setStep] = useState('welcome')
@@ -47,12 +49,14 @@ export default function App() {
 
         <div className="bg-card rounded-xl shadow-sm border border-border overflow-hidden">
           <StepIndicator currentStep={step} />
-          {step === 'welcome'  && <WelcomeStep onNext={advance} />}
-          {step === 'userData' && <UserDataStep onNext={advance} onBack={goBack} initialData={collectedData} />}
-          {step === 'otp'      && <OtpStep onNext={advance} onBack={goBack} signerData={collectedData} />}
-          {step === 'geo'      && <GeoStep onNext={advance} onBack={goBack} />}
-          {step === 'selfie'   && <SelfieStep onNext={advance} onBack={goBack} />}
-          {step === 'receipt'  && <ReceiptStep data={collectedData} />}
+          {step === 'welcome'   && <WelcomeStep onNext={advance} />}
+          {step === 'userData'  && <UserDataStep onNext={advance} onBack={goBack} initialData={collectedData} />}
+          {step === 'otp'       && <OtpStep onNext={advance} onBack={goBack} signerData={collectedData} />}
+          {step === 'document'  && <DocumentStep onNext={advance} onBack={goBack} />}
+          {step === 'geo'       && <GeoStep onNext={advance} onBack={goBack} />}
+          {step === 'webauthn'  && <WebAuthnStep onNext={advance} onBack={goBack} signerData={collectedData} />}
+          {step === 'selfie'    && <SelfieStep onNext={advance} onBack={goBack} />}
+          {step === 'receipt'   && <ReceiptStep data={collectedData} />}
         </div>
 
         <p className="mt-3 text-[11px] text-muted-foreground text-center">
