@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
-import { IconWorld, IconMapPin, IconDeviceMobile, IconCheck, IconLoader2, IconArrowRight, IconAlertTriangle } from '@tabler/icons-react'
+import { IconWorld, IconMapPin, IconDeviceMobile, IconCheck, IconLoader2, IconArrowRight, IconAlertTriangle, IconArrowLeft } from '@tabler/icons-react'
 import { collectBrowserData } from '@/lib/dataCollection'
 import { collectFingerprint } from '@/lib/fingerprint'
 import { CONTRACT_TEXT } from './WelcomeStep'
@@ -62,7 +62,7 @@ function PermissionCard({ icon: Icon, label, status, value, onRequest, loading, 
   )
 }
 
-export function GeoStep({ onNext }) {
+export function GeoStep({ onNext, onBack }) {
   const [browserData, setBrowserData] = useState(null)
   const [loading, setLoading] = useState(true)
   const [geoStatus, setGeoStatus] = useState('idle')
@@ -72,29 +72,55 @@ export function GeoStep({ onNext }) {
 
   const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent)
 
-  useEffect(() => {
-    async function fetchData() {
-      const [bData, fpData] = await Promise.all([collectBrowserData(CONTRACT_TEXT), collectFingerprint()])
-      setBrowserData({ ...bData, ...fpData })
-      setLoading(false)
-    }
-    fetchData()
-  }, [])
-
-  async function handleRequestGeo() {
+  function doRequestGeo() {
     setGeoStatus('requesting')
     if (!navigator.geolocation) {
       setGeoData({ geoDenied: true, geoDenyReason: 'API não disponível' })
-      setGeoStatus('unavailable'); return
+      setGeoStatus('unavailable')
+      return
     }
     navigator.geolocation.getCurrentPosition(
       pos => {
-        setGeoData({ gpsLatitude: pos.coords.latitude, gpsLongitude: pos.coords.longitude, gpsAccuracy: Math.round(pos.coords.accuracy), gpsAltitude: pos.coords.altitude, gpsTimestamp: new Date(pos.timestamp).toISOString(), geoDenied: false })
+        setGeoData({
+          gpsLatitude: pos.coords.latitude,
+          gpsLongitude: pos.coords.longitude,
+          gpsAccuracy: Math.round(pos.coords.accuracy),
+          gpsAltitude: pos.coords.altitude,
+          gpsTimestamp: new Date(pos.timestamp).toISOString(),
+          geoDenied: false,
+        })
         setGeoStatus('success')
       },
       err => { setGeoData({ geoDenied: true, geoDenyReason: err.message }); setGeoStatus('denied') },
       { enableHighAccuracy: true, timeout: 12000, maximumAge: 0 }
     )
+  }
+
+  useEffect(() => {
+    async function init() {
+      const [bData, fpData] = await Promise.all([collectBrowserData(CONTRACT_TEXT), collectFingerprint()])
+      setBrowserData({ ...bData, ...fpData })
+      setLoading(false)
+
+      // Verifica se a permissão de geolocalização já foi concedida anteriormente
+      if (navigator.permissions) {
+        try {
+          const perm = await navigator.permissions.query({ name: 'geolocation' })
+          if (perm.state === 'granted') {
+            doRequestGeo()
+          } else if (perm.state === 'denied') {
+            setGeoData({ geoDenied: true, geoDenyReason: 'Permissão negada pelo navegador' })
+            setGeoStatus('denied')
+          }
+          // 'prompt' → mostra o botão normalmente
+        } catch {}
+      }
+    }
+    init()
+  }, [])
+
+  async function handleRequestGeo() {
+    doRequestGeo()
   }
 
   async function handleRequestMotion() {
@@ -117,6 +143,13 @@ export function GeoStep({ onNext }) {
   return (
     <>
       <div className="p-6">
+        {onBack && (
+          <Button variant="ghost" size="sm" onClick={onBack} className="-ml-2 mb-3 h-7 text-xs text-muted-foreground hover:text-foreground gap-1">
+            <IconArrowLeft size={14} />
+            Voltar
+          </Button>
+        )}
+
         <div className="flex items-center gap-2 mb-1">
           <IconMapPin size={16} className="text-primary" />
           <h2 className="text-lg font-bold text-foreground">Permissões necessárias</h2>
