@@ -1,31 +1,37 @@
 import { useRef, useEffect, useState, useCallback } from 'react'
-import { loadFaceDetectionModels, detectFace, isFaceInsideOval } from '../../lib/faceDetection'
-
-const STATUS = {
-  LOADING_MODELS: 'loading_models',
-  CAMERA_ERROR: 'camera_error',
-  NO_FACE: 'no_face',
-  MISALIGNED: 'misaligned',
-  ALIGNED: 'aligned',
-}
+import { loadFaceDetectionModels, detectFace, getFaceStatus } from '../../lib/faceDetection'
 
 const OVAL_RATIO = 0.72
 const OVAL_ASPECT = 1.32
 
 const STATUS_COLORS = {
-  [STATUS.LOADING_MODELS]: '#6b7280',
-  [STATUS.CAMERA_ERROR]: '#e02424',
-  [STATUS.NO_FACE]: '#e02424',
-  [STATUS.MISALIGNED]: '#d97706',
-  [STATUS.ALIGNED]: '#0e9f6e',
+  loading_models: '#6b7280',
+  camera_error:   '#e02424',
+  no_face:        '#e02424',
+  too_close:      '#d97706',
+  too_far:        '#d97706',
+  move_up:        '#d97706',
+  move_down:      '#d97706',
+  move_left:      '#d97706',
+  move_right:     '#d97706',
+  not_centered:   '#d97706',
+  misaligned:     '#d97706',
+  aligned:        '#0e9f6e',
 }
 
 const STATUS_MESSAGES = {
-  [STATUS.LOADING_MODELS]: '⏳ Carregando detecção de rosto...',
-  [STATUS.CAMERA_ERROR]: '❌ Erro ao acessar câmera. Verifique as permissões.',
-  [STATUS.NO_FACE]: '👤 Posicione seu rosto na moldura oval',
-  [STATUS.MISALIGNED]: '⚠️ Centralize seu rosto dentro da moldura',
-  [STATUS.ALIGNED]: '✅ Ótimo! Aguarde...',
+  loading_models: '⏳ Carregando detecção de rosto...',
+  camera_error:   '❌ Erro ao acessar a câmera. Verifique as permissões.',
+  no_face:        '👤 Posicione seu rosto dentro da moldura',
+  too_close:      '↔️ Afaste-se um pouco da câmera',
+  too_far:        '🔍 Aproxime-se um pouco mais da câmera',
+  move_up:        '⬆️ Suba o rosto um pouco',
+  move_down:      '⬇️ Desça o rosto um pouco',
+  move_left:      '➡️ Mova o rosto para a direita',
+  move_right:     '⬅️ Mova o rosto para a esquerda',
+  not_centered:   '🎯 Centralize seu rosto na moldura',
+  misaligned:     '🎯 Centralize seu rosto na moldura',
+  aligned:        '✅ Perfeito! Segure assim...',
 }
 
 function drawOverlay(ctx, w, h, status) {
@@ -67,7 +73,7 @@ export function OvalCamera({ onCapture }) {
   const countdownTimerRef = useRef(null)
   const countdownValueRef = useRef(null)
 
-  const [status, setStatus] = useState(STATUS.LOADING_MODELS)
+  const [status, setStatus] = useState('loading_models')
   const [countdown, setCountdown] = useState(null)
   const [modelsReady, setModelsReady] = useState(false)
   const [cameraReady, setCameraReady] = useState(false)
@@ -75,7 +81,7 @@ export function OvalCamera({ onCapture }) {
   useEffect(() => {
     loadFaceDetectionModels()
       .then(() => setModelsReady(true))
-      .catch(() => setStatus(STATUS.CAMERA_ERROR))
+      .catch(() => setStatus('camera_error'))
   }, [])
 
   useEffect(() => {
@@ -91,7 +97,7 @@ export function OvalCamera({ onCapture }) {
           setCameraReady(true)
         }
       } catch {
-        setStatus(STATUS.CAMERA_ERROR)
+        setStatus('camera_error')
       }
     }
     startCamera()
@@ -102,7 +108,7 @@ export function OvalCamera({ onCapture }) {
 
   useEffect(() => {
     if (!modelsReady || !cameraReady) return
-    setStatus(STATUS.NO_FACE)
+    setStatus('no_face')
 
     async function loop() {
       const video = videoRef.current
@@ -124,16 +130,12 @@ export function OvalCamera({ onCapture }) {
         isDetectingRef.current = true
         detectFace(video).then(detection => {
           isDetectingRef.current = false
-          let newStatus = STATUS.NO_FACE
-          if (detection) {
-            const ovalBounds = {
-              cx: w / 2, cy: h / 2,
-              rx: (w * OVAL_RATIO) / 2,
-              ry: (w * OVAL_RATIO * OVAL_ASPECT) / 2,
-            }
-            newStatus = isFaceInsideOval(detection, ovalBounds) ? STATUS.ALIGNED : STATUS.MISALIGNED
+          const ovalBounds = {
+            cx: w / 2, cy: h / 2,
+            rx: (w * OVAL_RATIO) / 2,
+            ry: (w * OVAL_RATIO * OVAL_ASPECT) / 2,
           }
-          setStatus(newStatus)
+          setStatus(getFaceStatus(detection, ovalBounds))
         })
       }
 
@@ -148,7 +150,7 @@ export function OvalCamera({ onCapture }) {
   }, [modelsReady, cameraReady])
 
   useEffect(() => {
-    if (status === STATUS.ALIGNED) {
+    if (status === 'aligned') {
       if (!countdownTimerRef.current) {
         countdownValueRef.current = 3
         setCountdown(3)
@@ -188,7 +190,7 @@ export function OvalCamera({ onCapture }) {
         <video ref={videoRef} className="camera-video" muted playsInline />
         <canvas ref={canvasRef} className="camera-canvas" />
 
-        {(status === STATUS.LOADING_MODELS || (!modelsReady && !cameraReady)) && (
+        {(status === 'loading_models' || (!modelsReady && !cameraReady)) && (
           <div className="camera-loading">
             <div className="spinner" />
             <span>Iniciando câmera e modelos de IA...</span>
