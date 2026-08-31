@@ -76,6 +76,7 @@ export function ReceiptStep({ data }) {
           <Section icon={IconUser} title="Assinante">
             <DataRow label="Nome" value={data.signerName} />
             <DataRow label="CPF" value={data.signerCpf} />
+            <DataRow label="Nascimento" value={data.signerBirthDate} />
             <DataRow label="E-mail" value={data.signerEmail} />
             <DataRow label="Celular" value={data.signerPhone} />
           </Section>

@@ -36,12 +36,17 @@ function validateCPF(cpf) {
   return rem === parseInt(digits[10])
 }
 
+const today = new Date()
+const maxBirthDate = new Date(today.getFullYear() - 18, today.getMonth(), today.getDate())
+  .toISOString().slice(0, 10)
+
 export function UserDataStep({ onNext, onBack, initialData }) {
   const [fields, setFields] = useState({
-    name:  initialData?.signerName  || '',
-    cpf:   initialData?.signerCpf   || '',
-    email: initialData?.signerEmail || '',
-    phone: initialData?.signerPhone || '',
+    name:      initialData?.signerName      || '',
+    cpf:       initialData?.signerCpf       || '',
+    email:     initialData?.signerEmail     || '',
+    phone:     initialData?.signerPhone     || '',
+    birthDate: initialData?.signerBirthDate || '',
   })
   const [errors, setErrors] = useState({})
 
@@ -61,6 +66,8 @@ export function UserDataStep({ onNext, onBack, initialData }) {
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(fields.email)) errs.email = 'E-mail inválido'
     const phoneDigits = fields.phone.replace(/\D/g, '')
     if (phoneDigits.length < 10 || phoneDigits.length > 11) errs.phone = 'Celular inválido'
+    if (!fields.birthDate) errs.birthDate = 'Informe a data de nascimento'
+    else if (fields.birthDate > maxBirthDate) errs.birthDate = 'É necessário ter 18 anos ou mais'
     return errs
   }
 
@@ -68,10 +75,11 @@ export function UserDataStep({ onNext, onBack, initialData }) {
     const errs = validate()
     if (Object.keys(errs).length) { setErrors(errs); return }
     onNext({
-      signerName: fields.name,
-      signerCpf: fields.cpf,
-      signerEmail: fields.email,
-      signerPhone: fields.phone,
+      signerName:      fields.name,
+      signerCpf:       fields.cpf,
+      signerEmail:     fields.email,
+      signerPhone:     fields.phone,
+      signerBirthDate: fields.birthDate,
     })
   }
 
@@ -150,6 +158,22 @@ export function UserDataStep({ onNext, onBack, initialData }) {
               className={errors.phone ? 'border-destructive focus-visible:ring-destructive' : ''}
             />
             {errors.phone && <p className="text-xs text-destructive">{errors.phone}</p>}
+          </div>
+
+          <div className="space-y-1.5">
+            <Label htmlFor="birthDate">Data de nascimento</Label>
+            <Input
+              id="birthDate"
+              name="birthDate"
+              type="date"
+              value={fields.birthDate}
+              onChange={handleChange}
+              max={maxBirthDate}
+              min="1900-01-01"
+              autoComplete="bday"
+              className={errors.birthDate ? 'border-destructive focus-visible:ring-destructive' : ''}
+            />
+            {errors.birthDate && <p className="text-xs text-destructive">{errors.birthDate}</p>}
           </div>
         </div>
       </div>
